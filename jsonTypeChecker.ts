@@ -1,1 +1,1 @@
-export function targetType<T>(name: string) {}
+export declare function generate<T>(name: string): void

@@ -1,5 +1,5 @@
-import { targetType } from './jsonTypeChecker'
+import { generate } from './jsonTypeChecker'
 import { T, X } from './types'
 
-targetType<T>("parseT")
-targetType<X | undefined>("parseX")
+generate<T>("parseT")
+generate<X | undefined>("parseX")
