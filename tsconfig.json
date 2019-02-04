@@ -1,5 +1,9 @@
 {
     "compilerOptions": {
-        "strict": true
+        "strict": true,
+        "lib": [
+            "dom",
+            "es2015"
+        ]
     }
 }

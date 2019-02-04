@@ -1,0 +1,27 @@
+{
+  "name": "tsjsontypechecker",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "gen": "ts-node ts-json-generator.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diontools/TSJsonTypeChecker.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/diontools/TSJsonTypeChecker/issues"
+  },
+  "homepage": "https://github.com/diontools/TSJsonTypeChecker#readme",
+  "dependencies": {
+    "@types/node": "^10.12.21",
+    "typescript": "^3.3.1"
+  },
+  "devDependencies": {
+    "ts-node": "^8.0.2"
+  }
+}
