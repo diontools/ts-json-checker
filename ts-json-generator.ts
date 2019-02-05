@@ -1,16 +1,6 @@
 import * as ts from 'typescript'
 import { readFileSync, existsSync } from 'fs'
 
-interface GenInfo {
-    typeNode: ts.TypeNode
-    name: string
-}
-
-interface ParsedInfo {
-    name: string
-    type: ts.Type
-}
-
 const Reset = "\x1b[0m";
 const Bright = "\x1b[1m";
 const Dim = "\x1b[2m";
@@ -86,6 +76,11 @@ console.log(FgWhite + 'references finding...' + Reset)
 const refs = services.getReferencesAtPosition(tsJsonSource.fileName, generateFunc.name!.getStart())
 if (!refs) throw new Error("refs is undefined.")
 
+interface GenInfo {
+    typeNode: ts.TypeNode
+    name: string
+}
+
 const genInfos: GenInfo[] = []
 
 for (const ref of refs) {
@@ -130,73 +125,98 @@ function isBoolean(type: ts.Type) {
     return (type.flags & (ts.TypeFlags.Boolean | ts.TypeFlags.BooleanLiteral)) !== 0
 }
 
-function parseNodeType(parseds: ParsedInfo[], node: ts.Node) {
-    const type = typeChecker.getTypeAtLocation(node)
-
-    if (isBoolean(type)) {
-    } else if (type.isUnion()) {
-        for (const t of type.types) {
-            if (!isBoolean(t)) {
-                console.log(typeChecker.typeToString(t))
-                if (t.isClassOrInterface()) {
-                    parseInterfaceType(parseds, node, t)
-                }
-            }
-        }
-    } else if (type.isClassOrInterface()) {
-        parseInterfaceType(parseds, node, type)
-    }
+function isNumber(type: ts.Type) {
+    return (type.flags & (ts.TypeFlags.Number | ts.TypeFlags.NumberLiteral)) !== 0
 }
 
-function parseInterfaceType(parseds: ParsedInfo[], node: ts.Node, type: ts.Type) {
-    if (parseds.some(v => v.type === type)) {
-        console.log(FgWhite + 'parsed' + Reset)
-        return
+function isString(type: ts.Type) {
+    return (type.flags & (ts.TypeFlags.String | ts.TypeFlags.StringLiteral)) !== 0
+}
+
+function isNull(type: ts.Type) {
+    return (type.flags & ts.TypeFlags.Null) !== 0
+}
+
+function isUndefined(type: ts.Type) {
+    return (type.flags & ts.TypeFlags.Undefined) !== 0
+}
+
+function parseNodeType(parseds: ParsedInfo[], node: ts.Node, type: ts.Type) {
+    let parsed = parseds.find(p => p.type === type)
+    if (parsed) {
+        console.log(FgWhite + parsed.name, 'parsed' + Reset)
+        return parsed
     }
 
     const typeName = typeChecker.typeToString(type)
-    console.log('type:', Bright + FgCyan + typeName + Reset)
-
-    parseds.push({
+    parsed = {
         name: typeName,
         type: type,
-    })
-
-    for (const prop of type.getProperties()) {
-        const propType = typeChecker.getTypeOfSymbolAtLocation(prop, node)
-        console.log(typeName + '.' + prop.name + ':', Bright + FgGreen + typeChecker.typeToString(propType) + Reset)
-        parseNodeType(parseds, prop.declarations[0])
+        isUndefined: false,
+        isNull: false,
+        isObject: false,
+        isBool: false,
+        isNumber: false,
+        isString: false,
+        isArray: false,
+        additionalInfos: [],
     }
+    parseds.push(parsed)
+
+    if (isBoolean(type)) {
+        parsed.isBool = true
+    } else if (isNumber(type)) {
+        parsed.isNumber = true
+    } else if (isString(type)) {
+        parsed.isString = true
+    } else if (isNull(type)) {
+        parsed.isNull = true
+    } else if (isUndefined(type)) {
+        parsed.isUndefined = true
+    } else if (type.isUnion()) {
+        for (const t of type.types) {
+            //console.log(typeChecker.typeToString(t))
+            parseNodeType(parseds, node, t)
+        }
+    } else if (type.isClassOrInterface()) {
+        console.log('type:', Bright + FgCyan + typeName + Reset)
+
+        for (const prop of type.getProperties()) {
+            const propType = typeChecker.getTypeOfSymbolAtLocation(prop, node)
+            console.log(typeName + '.' + prop.name + ':', Bright + FgGreen + typeChecker.typeToString(propType) + Reset)
+            parseNodeType(parseds, prop.valueDeclaration, propType)
+        }
+    } else {
+        console.log(ts.TypeFlags[type.flags])
+        console.log(node)
+
+        const n = typeChecker.typeToTypeNode(type)!
+        if (ts.isArrayTypeNode(n)) {
+            const t = typeChecker.getTypeFromTypeNode(n.elementType)
+            console.log(typeChecker.typeToString(t))
+        }
+        
+        //throw new Error("unknown type: " + typeName)
+    }
+}
+
+interface ParsedInfo {
+    name: string
+    type: ts.Type
+    isUndefined: boolean
+    isNull: boolean
+    isObject: boolean
+    isBool: boolean
+    isNumber: boolean
+    isString: boolean
+    isArray: boolean
+    additionalInfos: ParsedInfo[]
 }
 
 const parsedInfos: ParsedInfo[] = []
 for (const gen of genInfos) {
-    console.log('generate', Bright + FgMagenta + gen.name + Reset)
-    parseNodeType(parsedInfos, gen.typeNode)
-
-    // const type = typeChecker.getTypeFromTypeNode(gen.typeNode)
-    // const typeName = typeChecker.typeToString(type)
-    // console.log('type:', Bright + FgCyan + typeName + Reset)
-    // console.log('name:', Bright + FgGreen + gen.name + Reset)
-
-    // for (const prop of type.getProperties()) {
-    //     const t = typeChecker.getTypeOfSymbolAtLocation(prop, gen.typeNode)
-    //     console.log(typeName + '.' + prop.name + ':', FgCyan + typeChecker.typeToString(t) + Reset)
-    //     const n = typeChecker.typeToTypeNode(t)!
-    //     console.log(n)
-    //     if (t.isClassOrInterface()) {
-    //         const decl = prop.declarations[0]
-    //         const source = decl.getSourceFile()
-    //         console.log(source.fileName)
-    //         const t = typeChecker.getTypeAtLocation(decl)
-    //         const typeName2 = typeChecker.typeToString(t);
-    //         for (const prop of t.getProperties()) {
-    //             const t2 = typeChecker.getTypeOfSymbolAtLocation(prop, decl)
-    //             console.log(typeName2 + '.' + prop.name + ':', FgCyan + typeChecker.typeToString(t2) + Reset)
-    //             const n2 = typeChecker.typeToTypeNode(t2)
-    //             console.log(n2)
-    //         }
-    //     }
-    // }
+    const type = typeChecker.getTypeAtLocation(gen.typeNode)
+    console.log('generate', Bright + FgMagenta + gen.name + Reset + '<' + Bright + FgYellow + typeChecker.typeToString(type) + Reset + '>')
+    parseNodeType(parsedInfos, gen.typeNode, type)
 }
 
