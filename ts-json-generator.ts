@@ -188,12 +188,15 @@ function parseNodeType(parseds: ParsedInfo[], node: ts.Node, type: ts.Type) {
         }
     } else {
         console.log(ts.TypeFlags[type.flags])
-        console.log(node)
 
-        const n = typeChecker.typeToTypeNode(type)!
-        if (ts.isArrayTypeNode(n)) {
-            const t = typeChecker.getTypeFromTypeNode(n.elementType)
-            console.log(typeChecker.typeToString(t))
+        const arr = typeChecker.typeToTypeNode(type)!
+        if (ts.isArrayTypeNode(arr)) {
+            console.log(ts.SyntaxKind[arr.elementType.kind], arr.elementType)
+            console.log(typeChecker.getTypeFromTypeNode(arr.elementType))
+            //console.log(typeChecker.getTypeFromTypeNode(arr.elementType))
+            // const sym = typeChecker.getSymbolAtLocation(a.elementType)!
+            // const t = typeChecker.getTypeOfSymbolAtLocation(sym, node)
+            // console.log(typeChecker.typeToString(t))
         }
         
         //throw new Error("unknown type: " + typeName)

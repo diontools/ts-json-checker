@@ -3,6 +3,7 @@
         "strict": true,
         "lib": [
             "es2015"
-        ]
+        ],
+        "sourceMap": true
     }
 }

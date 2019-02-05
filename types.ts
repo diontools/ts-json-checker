@@ -15,6 +15,6 @@ export interface T {
 }
 
 export interface X {
-    n: number
+    n2: number
     xd?: X
 }
