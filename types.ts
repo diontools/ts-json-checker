@@ -5,6 +5,10 @@ export interface T {
     u: null
     d: undefined
     na: number[]
+    sa: string[]
+    ba: boolean[]
+    ua: null[]
+    da: undefined[]
     nd?: number
     sd?: string
     bd?: boolean
@@ -12,6 +16,7 @@ export interface T {
     x: X
     xd?: X
     xud?: X | null
+    xa: X[]
 }
 
 export interface X {

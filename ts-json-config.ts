@@ -5,5 +5,6 @@ const settings: TSJsonSetting = {
     fileName: 'generated.ts',
 }
 
+generate<number>("parseN")
 generate<T>("parseT")
 generate<X | undefined>("parseX")
