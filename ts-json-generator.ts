@@ -121,6 +121,10 @@ if (genInfos.length === 0) {
     console.log(Bright + FgYellow + "references not found." + Reset)
 }
 
+function isPrimitive(type: ts.Type) {
+    return isBoolean(type) || isNumber(type) || isString(type) || isNull(type) || isUndefined(type) || isAny(type)
+}
+
 function isBoolean(type: ts.Type) {
     return (type.flags & (ts.TypeFlags.Boolean | ts.TypeFlags.BooleanLiteral)) !== 0
 }
@@ -141,45 +145,43 @@ function isUndefined(type: ts.Type) {
     return (type.flags & ts.TypeFlags.Undefined) !== 0
 }
 
+function isAny(type: ts.Type) {
+    return (type.flags & ts.TypeFlags.Any) !== 0
+}
+
+function getElementTypeOfArrayType(type: ts.Type): ts.Type | undefined {
+    return (typeChecker as any).getElementTypeOfArrayType(type)
+}
+
 function parseNodeType(parseds: ParsedInfo[], node: ts.Node, type: ts.Type) {
+    if (isPrimitive(type)) {
+        return
+    }
+
     let parsed = parseds.find(p => p.type === type)
     if (parsed) {
         console.log(FgWhite + parsed.name, 'parsed' + Reset)
-        return parsed
+        return
     }
 
     const typeName = typeChecker.typeToString(type)
     parsed = {
         name: typeName,
         type: type,
-        isUndefined: false,
-        isNull: false,
-        isObject: false,
-        isBool: false,
-        isNumber: false,
-        isString: false,
-        isArray: false,
+        types: [],
         additionalInfos: [],
     }
     parseds.push(parsed)
 
-    if (isBoolean(type)) {
-        parsed.isBool = true
-    } else if (isNumber(type)) {
-        parsed.isNumber = true
-    } else if (isString(type)) {
-        parsed.isString = true
-    } else if (isNull(type)) {
-        parsed.isNull = true
-    } else if (isUndefined(type)) {
-        parsed.isUndefined = true
-    } else if (type.isUnion()) {
+    if (type.isUnion()) {
         for (const t of type.types) {
             //console.log(typeChecker.typeToString(t))
             parseNodeType(parseds, node, t)
         }
-    } else if (type.isClassOrInterface()) {
-        console.log('type:', Bright + FgCyan + typeName + Reset)
+    }
+
+    if (type.isClassOrInterface()) {
+        console.log('complex type:', Bright + FgCyan + typeName + Reset)
 
         for (const prop of type.getProperties()) {
             const propType = typeChecker.getTypeOfSymbolAtLocation(prop, node)
@@ -187,26 +189,33 @@ function parseNodeType(parseds: ParsedInfo[], node: ts.Node, type: ts.Type) {
             parseNodeType(parseds, prop.valueDeclaration, propType)
         }
     } else {
-        const eType: ts.Type | undefined = (typeChecker as any).getElementTypeOfArrayType(type)
+        const eType = getElementTypeOfArrayType(type)
         if (eType) {
             console.log('array of', typeChecker.typeToString(eType))
-        } else {
-            console.log(ts.TypeFlags[type.flags], typeChecker.typeToString(type))
-            throw new Error("unknown type: " + typeName)
+            parseNodeType(parseds, node, eType)
         }
+
+        console.log(ts.TypeFlags[type.flags])
+        throw new Error("unknown type: " + typeName)
     }
+}
+
+enum MemberType {
+    Number,
+    String,
+    Boolean,
+    Null,
+    Undefined,
+    Any,
+    Union,
+    Complex,
+    Array,
 }
 
 interface ParsedInfo {
     name: string
     type: ts.Type
-    isUndefined: boolean
-    isNull: boolean
-    isObject: boolean
-    isBool: boolean
-    isNumber: boolean
-    isString: boolean
-    isArray: boolean
+    types: MemberType[]
     additionalInfos: ParsedInfo[]
 }
 

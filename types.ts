@@ -4,11 +4,13 @@ export interface T {
     b: boolean
     u: null
     d: undefined
+    a: any
     na: number[]
     sa: string[]
     ba: boolean[]
     ua: null[]
     da: undefined[]
+    nad?: number[]
     nd?: number
     sd?: string
     bd?: boolean
