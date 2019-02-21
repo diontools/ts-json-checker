@@ -1,0 +1,11 @@
+{
+    "watch": [
+        "./"
+    ],
+    "ext": "ts",
+    "ignore": [
+        "**/*.spec.ts",
+        "generated.ts"
+    ],
+    "exec": "ts-node ts-json-generator.ts"
+}

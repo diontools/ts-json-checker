@@ -1,10 +1,12 @@
-import { generate, TSJsonSetting } from './ts-json'
-import { T, X } from './types'
+import { generate } from './ts-json'
+import { T as M, X } from './types'
 
-const settings: TSJsonSetting = {
-    fileName: 'generated.ts',
-}
+const fileName = 'generated.ts'
 
 generate<number>("parseN")
-generate<T>("parseT")
+generate<object>("parseO")
+generate<number | string | undefined>("parseNSD")
+generate<number | null | undefined>("parseNUD")
+generate<M>("parseM")
+generate<M | null>("parseT")
 generate<X | undefined>("parseX")
