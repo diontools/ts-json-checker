@@ -6,7 +6,9 @@
   "scripts": {
     "gen": "ts-node ./src/ts-json-generator.ts ./sample/ts-json-config.ts",
     "watch": "nodemon",
-    "test": "ts-node test.ts"
+    "test": "ts-node test.ts",
+    "start": "parcel ./docs-src/index.html --out-dir ./docs",
+    "build:docs": "parcel build ./docs-src/index.html --out-dir ./docs --public-url ./ --no-source-maps"
   },
   "repository": {
     "type": "git",
@@ -24,6 +26,7 @@
   },
   "devDependencies": {
     "nodemon": "^1.18.10",
+    "parcel-bundler": "^1.11.0",
     "ts-node": "^8.0.2"
   }
 }

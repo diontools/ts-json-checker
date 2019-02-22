@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "lib": [
+            "dom",
+            "es2015"
+        ],
+        "sourceMap": true
+    }
+}
