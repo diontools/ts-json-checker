@@ -55,7 +55,7 @@ export function parseX(v: any): X | undefined {
     return <X | undefined>v;
 }
 
-export function __check_T(v: any, r: string) {
+function __check_T(v: any, r: string) {
     if (typeof v.n !== "number")
         throw new TypeError(r + ".n is not Number.");
     if (typeof v.s !== "string")
@@ -89,7 +89,7 @@ export function __check_T(v: any, r: string) {
         __check_X(v.xud, r + ".xud");
 }
 
-export function __check_X(v: any, r: string) {
+function __check_X(v: any, r: string) {
     if (typeof v.n2 !== "number")
         throw new TypeError(r + ".n2 is not Number.");
     if (typeof v.xd !== "undefined" && typeof v.xd !== "object")

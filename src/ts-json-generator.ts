@@ -401,7 +401,7 @@ for (const p of complexTypes) {
 
     const func = ts.createFunctionDeclaration(
         undefined,
-        [exportKeywordToken],
+        undefined,
         undefined,
         funcName,
         undefined,
