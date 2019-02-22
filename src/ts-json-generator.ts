@@ -1,5 +1,6 @@
 import * as ts from 'typescript'
 import * as fs from 'fs'
+import * as path from 'path'
 
 const Reset = "\x1b[0m";
 const Bright = "\x1b[1m";
@@ -18,7 +19,7 @@ const FgMagenta = "\x1b[35m";
 const FgCyan = "\x1b[36m";
 const FgWhite = "\x1b[37m";
 
-const DEBUG = false
+const DEBUG = true
 if (!DEBUG) {
     console.log = function () { }
 }
@@ -33,7 +34,10 @@ const compilerOptions: ts.CompilerOptions = {
     strict: true,
 }
 
-const files = ['ts-json.ts', configFile]
+const tsJsonFile = path.join(__dirname, 'ts-json.ts')
+console.log('tsJson:', tsJsonFile)
+
+const files = [tsJsonFile, configFile]
 
 const servicesHost: ts.LanguageServiceHost = {
     getScriptFileNames: () => files,

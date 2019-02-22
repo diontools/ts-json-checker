@@ -1,4 +1,4 @@
-import { generate } from './ts-json'
+import { generate } from './src/ts-json'
 
 import { T as M, X } from './types'
 
