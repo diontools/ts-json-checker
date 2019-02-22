@@ -2,10 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Current TS File",
+            "name": "Generate",
             "type": "node",
             "request": "launch",
-            "args": ["${relativeFile}"],
+            "args": ["./src/ts-json-generator.ts", "./sample/ts-json-config.ts"],
             "runtimeArgs": ["-r", "ts-node/register"],
             "cwd": "${workspaceRoot}",
             "protocol": "inspector",
