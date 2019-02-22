@@ -1,7 +1,7 @@
 import { generate } from './ts-json'
 import { T as M, X } from './types'
 
-const fileName = 'generated.ts'
+const fileName = './generated.ts'
 
 generate<number>("parseN")
 generate<object>("parseO")

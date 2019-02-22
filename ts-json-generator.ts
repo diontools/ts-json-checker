@@ -18,7 +18,7 @@ const FgMagenta = "\x1b[35m";
 const FgCyan = "\x1b[36m";
 const FgWhite = "\x1b[37m";
 
-const DEBUG = true
+const DEBUG = false
 if (!DEBUG) {
     console.log = function () { }
 }
@@ -351,7 +351,7 @@ function getParsed(type: ts.Type) {
 
 for (const gen of genInfos) {
     const type = typeChecker.getTypeAtLocation(gen.typeNode)
-    console.log('generate', Bright + FgMagenta + gen.name + Reset + '<' + Bright + FgYellow + typeChecker.typeToString(type) + Reset + '>')
+    console.info('generate', Bright + FgMagenta + gen.name + Reset + '<' + Bright + FgYellow + typeChecker.typeToString(type) + Reset + '>')
     const parsed = parseNodeType(parsedInfos, gen.typeNode, type)
 
     const vParamName = ts.createIdentifier('v')
@@ -418,7 +418,27 @@ tsJsonConfigSource.forEachChild(node => {
 
 outputTexts.unshift(...imports.map(d => d.getText()))
 
-fs.writeFileSync('./generated.ts', outputTexts.join('\n\n'))
+const variables: ts.VariableDeclaration[] = []
+tsJsonConfigSource.forEachChild(node => {
+    if (ts.isVariableStatement(node)) {
+        if ((node.declarationList.flags & ts.NodeFlags.Const) !== 0) {
+            for (const dec of node.declarationList.declarations) {
+                if (ts.isIdentifier(dec.name)) {
+                    variables.push(dec)
+                }
+            }
+        }
+    }
+})
+
+const fileNameVariable = variables.find(v => (<ts.Identifier>v.name).text === 'fileName')
+if (!fileNameVariable) throw new Error('fileName variable not found.')
+if (!fileNameVariable.initializer) throw new Error('fileName variable initializer is undefined.')
+if (!ts.isStringLiteral(fileNameVariable.initializer)) throw new Error('fileName variable initializer is not string literal.')
+const fileName = fileNameVariable.initializer.text
+
+console.info(Bright + FgWhite + 'output:', FgGreen + fileName + Reset)
+fs.writeFileSync(fileName, outputTexts.join('\n\n'))
 
 function createTypeCheckStatements(parsed: ParsedInfo, value: ts.Expression, name: string, root?: ts.Identifier) {
     const statements: ts.Statement[] = []
