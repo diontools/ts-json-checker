@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "gen": "ts-node ./src/ts-json-generator.ts",
+    "gen": "ts-node ./src/ts-json-generator.ts ./sample/ts-json-config.ts",
     "watch": "nodemon",
     "test": "ts-node test.ts"
   },

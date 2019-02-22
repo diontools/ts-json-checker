@@ -24,7 +24,7 @@ if (!DEBUG) {
     console.log = function () { }
 }
 
-const configFile = process.argv.length > 3 ? process.argv[2] : 'ts-json-config.ts'
+const configFile = process.argv.length >= 3 ? process.argv[2] : 'ts-json-config.ts'
 console.log('config:', configFile)
 
 console.log(FgWhite + 'initialize...' + Reset)
@@ -441,8 +441,9 @@ if (!fileNameVariable.initializer) throw new Error('fileName variable initialize
 if (!ts.isStringLiteral(fileNameVariable.initializer)) throw new Error('fileName variable initializer is not string literal.')
 const fileName = fileNameVariable.initializer.text
 
-console.info(Bright + FgWhite + 'output:', FgGreen + fileName + Reset)
-fs.writeFileSync(fileName, outputTexts.join('\n\n'))
+const outputFile = path.join(path.dirname(configFile), fileName)
+console.info(Bright + FgWhite + 'output:', FgGreen + outputFile + Reset)
+fs.writeFileSync(outputFile, outputTexts.join('\n\n'))
 
 function createTypeCheckStatements(parsed: ParsedInfo, value: ts.Expression, name: string, root?: ts.Identifier) {
     const statements: ts.Statement[] = []
