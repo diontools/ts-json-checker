@@ -30,6 +30,12 @@ export function parseNUD(v: any): number | null | undefined {
     return <number | null | undefined>v;
 }
 
+export function parseNA(v: any): number[] {
+    if (!Array.isArray(v))
+        throw new TypeError("v is not Array.");
+    return <number[]>v;
+}
+
 export function parseM(v: any): M {
     if (typeof v !== "object")
         throw new TypeError("v is not Object.");
@@ -64,8 +70,18 @@ function __check_T(v: any, r: string) {
         throw new TypeError(r + ".u is not Null.");
     if (typeof v.d !== "undefined")
         throw new TypeError(r + ".d is not Undefined.");
-    if (typeof v.nad !== "undefined")
-        throw new TypeError(r + ".nad is not Undefined.");
+    if (!Array.isArray(v.na))
+        throw new TypeError(r + ".na is not Array.");
+    if (!Array.isArray(v.sa))
+        throw new TypeError(r + ".sa is not Array.");
+    if (!Array.isArray(v.ba))
+        throw new TypeError(r + ".ba is not Array.");
+    if (!Array.isArray(v.ua))
+        throw new TypeError(r + ".ua is not Array.");
+    if (!Array.isArray(v.da))
+        throw new TypeError(r + ".da is not Array.");
+    if (typeof v.nad !== "undefined" && !Array.isArray(v.nad))
+        throw new TypeError(r + ".nad is not Array | Undefined.");
     if (typeof v.nd !== "undefined" && typeof v.nd !== "number")
         throw new TypeError(r + ".nd is not Number | Undefined.");
     if (typeof v.sd !== "undefined" && typeof v.sd !== "string")
@@ -85,6 +101,8 @@ function __check_T(v: any, r: string) {
         throw new TypeError(r + ".xud is not Object | Null | Undefined.");
     if (typeof v.xud !== "undefined" && v.xud !== null)
         __check_X(v.xud, r + ".xud");
+    if (!Array.isArray(v.xa))
+        throw new TypeError(r + ".xa is not Array.");
 }
 
 function __check_X(v: any, r: string) {

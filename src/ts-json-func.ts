@@ -486,7 +486,9 @@ function getBaseKinds(parsed: ParsedInfo, parsedInfos: ParsedInfo[], types: Pars
             getBaseKinds(getParsed(parsedInfos, t)!, parsedInfos, types)
         }
     } else if (parsed.kind === ParsedKind.Complex) {
-        types.push(ParsedKind.Object);
+        types.push(ParsedKind.Object)
+    } else if (parsed.kind === ParsedKind.Array) {
+        types.push(ParsedKind.Array)
     }
 
     return types
@@ -524,7 +526,9 @@ function createBaseKindsCheckExp(value: ts.Expression, kinds: ParsedKind[]): ts.
         const checkExp =
             kind === ParsedKind.Null
                 ? createNullCheckExp(value)
-                : createCheckTypeOfExp(value, getPrimitiveKindName(kind))
+                : kind == ParsedKind.Array
+                    ? createArrayCheckExp(value)
+                    : createCheckTypeOfExp(value, getPrimitiveKindName(kind))
 
         exp =
             exp
@@ -537,6 +541,10 @@ function createBaseKindsCheckExp(value: ts.Expression, kinds: ParsedKind[]): ts.
 
 function createNullCheckExp(value: ts.Expression): ts.Expression {
     return ts.createStrictInequality(value, ts.createNull())
+}
+
+function createArrayCheckExp(value: ts.Expression): ts.Expression {
+    return ts.createPrefix(ts.SyntaxKind.ExclamationToken, ts.createCall(ts.createPropertyAccess(ts.createIdentifier('Array'), 'isArray'), undefined, [value]))
 }
 
 function createCheckTypeOfExp(value: ts.Expression, type: string): ts.Expression {
