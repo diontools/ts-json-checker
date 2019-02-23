@@ -1,5 +1,5 @@
 import * as ts from 'typescript'
-import { FgWhite, Reset, Bright, FgYellow, FgCyan, FgGreen, FgMagenta } from './Colors';
+import { FgWhite, Reset, Bright, FgYellow, FgCyan, FgGreen, FgMagenta } from './colors';
 
 interface GenerationInfo {
     typeNode: ts.TypeNode

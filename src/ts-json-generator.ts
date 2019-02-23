@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { FgWhite, Reset, Bright, FgYellow, FgCyan, FgGreen, FgMagenta, FgRed } from './Colors';
+import { FgWhite, Reset, Bright, FgYellow, FgCyan, FgGreen, FgMagenta, FgRed } from './colors';
 import { generate } from './ts-json-func'
 
 const DEBUG = true
