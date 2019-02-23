@@ -43,6 +43,10 @@ export function generate(params: GenerationParams): GenerationResult {
     const compilerOptions: ts.CompilerOptions = {
         module: ts.ModuleKind.CommonJS,
         strict: true,
+        baseUrl: '.',
+        paths: {
+            'ts-json': ['./src/ts-json']
+        }
     }
 
     const servicesHost: ts.LanguageServiceHost = {
@@ -199,7 +203,9 @@ function getConstVariables(node: ts.Node) {
 function getImports(node: ts.Node) {
     const imports: ts.ImportDeclaration[] = []
     node.forEachChild(node => {
-        if (ts.isImportDeclaration(node)) {
+        if (ts.isImportDeclaration(node)
+            && ts.isStringLiteral(node.moduleSpecifier)
+            && node.moduleSpecifier.text !== "ts-json") {
             imports.push(node)
         }
     })

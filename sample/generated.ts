@@ -1,5 +1,3 @@
-import { generate } from '../src/ts-json'
-
 import { T as M, X } from './types'
 
 export class TypeError implements Error {

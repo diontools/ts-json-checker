@@ -4,6 +4,10 @@
         "lib": [
             "es2015"
         ],
-        "sourceMap": true
+        "sourceMap": true,
+        "baseUrl": ".",
+        "paths": {
+            "ts-json": ["./src/ts-json"]
+        }
     }
 }

@@ -1,4 +1,4 @@
-import { generate } from '../src/ts-json'
+import { generate } from 'ts-json'
 import { T as M, X } from './types'
 
 const fileName = './generated.ts'
