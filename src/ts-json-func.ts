@@ -18,7 +18,7 @@ export function generate(tsJsonFile: string, configFile: string, resolve: (fileN
         module: ts.ModuleKind.CommonJS,
         strict: true,
     }
-    
+
     const servicesHost: ts.LanguageServiceHost = {
         getScriptFileNames: () => files,
         getScriptVersion: fileName => fileName,
@@ -35,111 +35,127 @@ export function generate(tsJsonFile: string, configFile: string, resolve: (fileN
         readFile: ts.sys.readFile,
         readDirectory: ts.sys.readDirectory,
     }
-    
+
     const services = ts.createLanguageService(
         servicesHost,
         ts.createDocumentRegistry()
     )
-    
+
     const program = services.getProgram()
     if (!program) throw new Error("program is undefined.")
-    
+
     const typeChecker = program.getTypeChecker()
-    
+
     const tsJsonSource = program.getSourceFile(tsJsonFile)
     if (!tsJsonSource) throw new Error("tsJsonSource is undefined.")
-    
+
     const tsJsonConfigSource = program.getSourceFile(configFile)
     if (!tsJsonConfigSource) throw new Error("tsJsonConfigSource is undefined.")
-    
+
     for (const diag of services.getCompilerOptionsDiagnostics()) {
         console.log(diag)
     }
-    
+
     console.log(FgWhite + 'generate function finding...' + Reset)
-    
-    const generateFunc = tsJsonSource.forEachChild(node => {
-        if (ts.isFunctionDeclaration(node) && node.name && node.name.text === "generate") {
-            return node
-        }
-    })
-    
+
+    const generateFunc = getGenerateFunction(tsJsonSource)
     if (!generateFunc) throw new Error("generate function is undefined.")
-    
+
     console.log(FgWhite + tsJsonSource.fileName, generateFunc.name!.getStart(), generateFunc.getText() + Reset)
-    
+
     console.log(FgWhite + 'references finding...' + Reset)
-    
+
     const refs = services.getReferencesAtPosition(tsJsonSource.fileName, generateFunc.name!.getStart())
     if (!refs) throw new Error("refs is undefined.")
 
+    const genInfos = getGenerationInfos(refs, program);
+    if (genInfos.length === 0) {
+        console.log(Bright + FgYellow + "generate function not found." + Reset)
+    }
 
+    const outputTexts: string[] = []
+    outputTexts.push(printNode(typeErrorClass))
+
+    const parsedInfos: ParsedInfo[] = []
+    for (const gen of genInfos) {
+        const func = generateFunction(typeChecker, gen, parsedInfos)
+        outputTexts.push(printNode(func))
+    }
+
+    const complexTypes = parsedInfos.filter(p => p.kind === ParsedKind.Complex)
+    for (const p of complexTypes) {
+        const func = generateComplexFunction(parsedInfos, p)
+        outputTexts.push(printNode(func))
+    }
+
+    const imports = getImports(tsJsonConfigSource);
+    outputTexts.unshift(...imports.map(d => d.getText()))
+
+    const variables = getConstVariables(tsJsonConfigSource);
+
+    const fileNameVariable = variables.find(v => (<ts.Identifier>v.name).text === 'fileName')
+    if (!fileNameVariable) throw new Error('fileName variable not found.')
+    if (!fileNameVariable.initializer) throw new Error('fileName variable initializer is undefined.')
+    if (!ts.isStringLiteral(fileNameVariable.initializer)) throw new Error('fileName variable initializer is not string literal.')
+    const fileName = fileNameVariable.initializer.text
+
+    return {
+        fileName: fileName,
+        code: outputTexts.join('\n\n'),
+    }
+}
+
+
+
+function getGenerationInfos(refs: ts.ReferenceEntry[], program: ts.Program) {
     const genInfos: GenerationInfo[] = []
-    
+
     for (const ref of refs) {
         if (!ref.isDefinition) {
             console.log(FgWhite + ref.fileName, ref.textSpan.start + Reset)
-    
+            
             const targetFile = program.getSourceFile(ref.fileName)
             if (!targetFile) throw new Error("targetFile is undefined.")
-    
-            const targetFunc = targetFile.forEachChild(
-                function visitor(n: ts.Node): ts.CallExpression | undefined {
-                    if (ref.textSpan.start === n.getStart() && ts.isCallExpression(n)) {
-                        return n
-                    }
-    
-                    return n.forEachChild(visitor)
-                }
-            )
-    
+
+            const targetFunc = getReferencedCallExpression(targetFile, ref)
             if (!targetFunc) throw new Error("target function is undefined.")
-    
+
             console.log(FgWhite + targetFunc.getText() + Reset)
-    
+
             const typeNode = targetFunc.typeArguments![0]
-    
             const arg0 = targetFunc.arguments[0]
             if (!ts.isStringLiteral(arg0)) throw new Error("arg0 is not string literal.")
-    
-    
+
             genInfos.push({
                 typeNode: typeNode,
                 name: arg0.text,
             })
         }
     }
-    
-    if (genInfos.length === 0) {
-        console.log(Bright + FgYellow + "references not found." + Reset)
-    }
 
+    return genInfos
+}
 
-    const outputTexts: string[] = []
-    outputTexts.push(printNode(typeErrorClass))
+function getReferencedCallExpression(node: ts.Node, ref: ts.ReferenceEntry) {
+    return node.forEachChild(function visitor(n: ts.Node): ts.CallExpression | undefined {
+        if (ref.textSpan.start === n.getStart() && ts.isCallExpression(n)) {
+            return n
+        }
+        return n.forEachChild(visitor)
+    });
+}
 
-    for (const gen of genInfos) {
-        const func = generateFunction(typeChecker, gen)
-        outputTexts.push(printNode(func))
-    }
-
-    const complexTypes = parsedInfos.filter(p => p.kind === ParsedKind.Complex)
-    for (const p of complexTypes) {
-        const func = generateComplexFunction(p)
-        outputTexts.push(printNode(func))
-    }
-
-    const imports: ts.ImportDeclaration[] = []
-    tsJsonConfigSource.forEachChild(node => {
-        if (ts.isImportDeclaration(node)) {
-            imports.push(node)
+function getGenerateFunction(node: ts.Node) {
+    return node.forEachChild(node => {
+        if (ts.isFunctionDeclaration(node) && node.name && node.name.text === "generate") {
+            return node
         }
     })
-    
-    outputTexts.unshift(...imports.map(d => d.getText()))
-    
+}
+
+function getConstVariables(node: ts.Node) {
     const variables: ts.VariableDeclaration[] = []
-    tsJsonConfigSource.forEachChild(node => {
+    node.forEachChild(node => {
         if (ts.isVariableStatement(node)) {
             if ((node.declarationList.flags & ts.NodeFlags.Const) !== 0) {
                 for (const dec of node.declarationList.declarations) {
@@ -149,21 +165,19 @@ export function generate(tsJsonFile: string, configFile: string, resolve: (fileN
                 }
             }
         }
-    })
-
-    const fileNameVariable = variables.find(v => (<ts.Identifier>v.name).text === 'fileName')
-    if (!fileNameVariable) throw new Error('fileName variable not found.')
-    if (!fileNameVariable.initializer) throw new Error('fileName variable initializer is undefined.')
-    if (!ts.isStringLiteral(fileNameVariable.initializer)) throw new Error('fileName variable initializer is not string literal.')
-    const fileName = fileNameVariable.initializer.text
-    
-    return {
-        fileName: fileName,
-        code: outputTexts.join('\n\n'),
-    }
+    });
+    return variables
 }
 
-
+function getImports(node: ts.Node) {
+    const imports: ts.ImportDeclaration[] = []
+    node.forEachChild(node => {
+        if (ts.isImportDeclaration(node)) {
+            imports.push(node)
+        }
+    })
+    return imports
+}
 
 function isBoolean(type: ts.Type) {
     return (type.flags & (ts.TypeFlags.Boolean | ts.TypeFlags.BooleanLiteral)) !== 0
@@ -373,13 +387,11 @@ const typeErrorClass = ts.createClassDeclaration(
 )
 
 
-const parsedInfos: ParsedInfo[] = []
-
-function getParsed(type: ts.Type) {
+function getParsed(parsedInfos: ParsedInfo[], type: ts.Type) {
     return parsedInfos.find(p => p.keyType === type)
 }
 
-function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo) {
+function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, parsedInfos: ParsedInfo[]) {
     const type = typeChecker.getTypeAtLocation(gen.typeNode)
     console.info('generate', Bright + FgMagenta + gen.name + Reset + '<' + Bright + FgYellow + typeChecker.typeToString(type) + Reset + '>')
     const parsed = parseNodeType(typeChecker, parsedInfos, gen.typeNode, type)
@@ -389,7 +401,7 @@ function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo) {
 
     printParsed(typeChecker, parsed)
 
-    const statements = createTypeCheckStatements(parsed, vParamName, vParamName.text);
+    const statements = createTypeCheckStatements(parsedInfos, parsed, vParamName, vParamName.text);
     statements.push(ts.createReturn(ts.createTypeAssertion(gen.typeNode, vParamName)))
 
     const func = ts.createFunctionDeclaration(
@@ -406,8 +418,8 @@ function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo) {
     return func
 }
 
-function generateComplexFunction(p: ParsedInfo) {
-    const funcName = '__check_' + p.name
+function generateComplexFunction(parsedInfos: ParsedInfo[], parsed: ParsedInfo) {
+    const funcName = '__check_' + parsed.name
     console.info(Bright + FgWhite + 'generate', FgCyan + funcName + Reset)
 
     const vParamName = ts.createIdentifier('v')
@@ -417,10 +429,10 @@ function generateComplexFunction(p: ParsedInfo) {
     const rParam = ts.createParameter(undefined, undefined, undefined, rParamName, undefined, ts.createKeywordTypeNode(ts.SyntaxKind.StringKeyword))
 
     const statements: ts.Statement[] = []
-    for (const member of p.members) {
-        const p = getParsed(member.type)!
+    for (const member of parsed.members) {
+        const p = getParsed(parsedInfos, member.type)!
         const value = ts.createPropertyAccess(vParamName, member.name)
-        const s = createTypeCheckStatements(p, value, member.name, rParamName)
+        const s = createTypeCheckStatements(parsedInfos, p, value, member.name, rParamName)
         statements.push(...s)
     }
 
@@ -438,15 +450,15 @@ function generateComplexFunction(p: ParsedInfo) {
     return func
 }
 
-function createTypeCheckStatements(parsed: ParsedInfo, value: ts.Expression, name: string, root?: ts.Identifier) {
+function createTypeCheckStatements(parsedInfos: ParsedInfo[], parsed: ParsedInfo, value: ts.Expression, name: string, root?: ts.Identifier) {
     const statements: ts.Statement[] = []
 
-    const baseKinds = getBaseKinds(parsed)
+    const baseKinds = getBaseKinds(parsed, parsedInfos)
     if (baseKinds.length > 0) {
         statements.push(createBaseKindsCheckStatement(value, baseKinds, name, root))
     }
 
-    const complexType = getComplexType(parsed);
+    const complexType = getComplexType(parsed, parsedInfos);
     if (complexType) {
         const check = ts.createStatement(ts.createCall(ts.createIdentifier('__check_' + complexType.name), undefined, [
             value,
@@ -464,12 +476,12 @@ function createTypeCheckStatements(parsed: ParsedInfo, value: ts.Expression, nam
     return statements
 }
 
-function getBaseKinds(parsed: ParsedInfo, types: ParsedKind[] = []): ParsedKind[] {
+function getBaseKinds(parsed: ParsedInfo, parsedInfos: ParsedInfo[], types: ParsedKind[] = []): ParsedKind[] {
     if (isBaseKind(parsed.kind)) {
         types.push(parsed.kind)
     } else if (parsed.kind === ParsedKind.Union) {
         for (const t of parsed.types) {
-            getBaseKinds(getParsed(t)!, types)
+            getBaseKinds(getParsed(parsedInfos, t)!, parsedInfos, types)
         }
     } else if (parsed.kind === ParsedKind.Complex) {
         types.push(ParsedKind.Object);
@@ -478,13 +490,13 @@ function getBaseKinds(parsed: ParsedInfo, types: ParsedKind[] = []): ParsedKind[
     return types
 }
 
-function getComplexType(parsed: ParsedInfo) {
+function getComplexType(parsed: ParsedInfo, parsedInfos: ParsedInfo[]) {
     if (parsed.kind === ParsedKind.Complex) {
         return parsed
     } else if (parsed.kind === ParsedKind.Union) {
         for (const t of parsed.types) {
-            const p = getParsed(t)!
-            if (getComplexType(p)) {
+            const p = getParsed(parsedInfos, t)!
+            if (getComplexType(p, parsedInfos)) {
                 return p
             }
         }
@@ -532,13 +544,6 @@ function createCheckTypeOfExp(value: ts.Expression, type: string): ts.Expression
 function getNotCallableKinds(baseKinds: ParsedKind[]) {
     return baseKinds.filter(v => v === ParsedKind.Undefined || v === ParsedKind.Null)
 }
-
-// if (DEBUG) {
-//     console.log('parsed infos')
-//     for (const p of parsedInfos) {
-//         printParsed(p)
-//     }
-// }
 
 function printParsed(typeChecker: ts.TypeChecker, p: ParsedInfo) {
     console.log(p.name, ParsedKind[p.kind], p.elementType && typeChecker.typeToString(p.elementType), p.types.map(t => typeChecker.typeToString(t)), p.members.map(m => [m.name, typeChecker.typeToString(m.type)]))
