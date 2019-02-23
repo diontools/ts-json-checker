@@ -6,6 +6,14 @@ interface GenerationInfo {
     name: string
 }
 
+export interface GenerationParams {
+    tsJsonFile: string
+    configFile: string
+    resolve: (fileName: string) => string | undefined
+    defaultLibFileName?: string
+    eol: "\r\n" | "\n"
+}
+
 export interface GenerationResult {
     fileName: string
     code: string
@@ -19,9 +27,9 @@ const printingSource = ts.createSourceFile(
     ts.ScriptKind.TS
 )
 
-export function generate(tsJsonFile: string, configFile: string, resolve: (fileName: string) => string | undefined, defaultLibFileName: string | undefined, eol: "\r\n" | "\n"): GenerationResult {
+export function generate(params: GenerationParams): GenerationResult {
     const printer = ts.createPrinter({
-        newLine: eol === "\r\n" ? ts.NewLineKind.CarriageReturnLineFeed : ts.NewLineKind.LineFeed
+        newLine: params.eol === "\r\n" ? ts.NewLineKind.CarriageReturnLineFeed : ts.NewLineKind.LineFeed
     })
 
     function printNode(node: ts.Node) {
@@ -30,7 +38,7 @@ export function generate(tsJsonFile: string, configFile: string, resolve: (fileN
         return text
     }
 
-    const files = [tsJsonFile, configFile]
+    const files = [params.tsJsonFile, params.configFile]
 
     const compilerOptions: ts.CompilerOptions = {
         module: ts.ModuleKind.CommonJS,
@@ -41,15 +49,15 @@ export function generate(tsJsonFile: string, configFile: string, resolve: (fileN
         getScriptFileNames: () => files,
         getScriptVersion: fileName => fileName,
         getScriptSnapshot: fileName => {
-            const v = resolve(fileName)
+            const v = params.resolve(fileName)
             return v ? ts.ScriptSnapshot.fromString(v) : undefined
             // if (!fs.existsSync(fileName)) return undefined
             // return ts.ScriptSnapshot.fromString(fs.readFileSync(fileName).toString())
         },
         getCurrentDirectory: () => "",
         getCompilationSettings: () => compilerOptions,
-        getDefaultLibFileName: options => defaultLibFileName || ts.getDefaultLibFilePath(options),
-        getNewLine: () => eol,
+        getDefaultLibFileName: options => params.defaultLibFileName || ts.getDefaultLibFilePath(options),
+        getNewLine: () => params.eol,
         fileExists: ts.sys.fileExists,
         readFile: ts.sys.readFile,
         readDirectory: ts.sys.readDirectory,
@@ -65,10 +73,10 @@ export function generate(tsJsonFile: string, configFile: string, resolve: (fileN
 
     const typeChecker = program.getTypeChecker()
 
-    const tsJsonSource = program.getSourceFile(tsJsonFile)
+    const tsJsonSource = program.getSourceFile(params.tsJsonFile)
     if (!tsJsonSource) throw new Error("tsJsonSource is undefined.")
 
-    const tsJsonConfigSource = program.getSourceFile(configFile)
+    const tsJsonConfigSource = program.getSourceFile(params.configFile)
     if (!tsJsonConfigSource) throw new Error("tsJsonConfigSource is undefined.")
 
     for (const diag of services.getCompilerOptionsDiagnostics()) {
@@ -120,7 +128,7 @@ export function generate(tsJsonFile: string, configFile: string, resolve: (fileN
 
     return {
         fileName: fileName,
-        code: outputTexts.join(eol + eol),
+        code: outputTexts.join(params.eol + params.eol),
     }
 }
 
