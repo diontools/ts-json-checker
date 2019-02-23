@@ -11,7 +11,25 @@ export interface GenerationResult {
     code: string
 }
 
-export function generate(tsJsonFile: string, configFile: string, resolve: (fileName: string) => string | undefined, defaultLibFileName: string | undefined): GenerationResult {
+const printingSource = ts.createSourceFile(
+    'printing',
+    '',
+    ts.ScriptTarget.ES5,
+    false,
+    ts.ScriptKind.TS
+)
+
+export function generate(tsJsonFile: string, configFile: string, resolve: (fileName: string) => string | undefined, defaultLibFileName: string | undefined, eol: "\r\n" | "\n"): GenerationResult {
+    const printer = ts.createPrinter({
+        newLine: eol === "\r\n" ? ts.NewLineKind.CarriageReturnLineFeed : ts.NewLineKind.LineFeed
+    })
+
+    function printNode(node: ts.Node) {
+        const text = printer.printNode(ts.EmitHint.Unspecified, node, printingSource)
+        console.log(text)
+        return text
+    }
+
     const files = [tsJsonFile, configFile]
 
     const compilerOptions: ts.CompilerOptions = {
@@ -31,6 +49,7 @@ export function generate(tsJsonFile: string, configFile: string, resolve: (fileN
         getCurrentDirectory: () => "",
         getCompilationSettings: () => compilerOptions,
         getDefaultLibFileName: options => defaultLibFileName || ts.getDefaultLibFilePath(options),
+        getNewLine: () => eol,
         fileExists: ts.sys.fileExists,
         readFile: ts.sys.readFile,
         readDirectory: ts.sys.readDirectory,
@@ -101,7 +120,7 @@ export function generate(tsJsonFile: string, configFile: string, resolve: (fileN
 
     return {
         fileName: fileName,
-        code: outputTexts.join('\n\n'),
+        code: outputTexts.join(eol + eol),
     }
 }
 
@@ -113,7 +132,7 @@ function getGenerationInfos(refs: ts.ReferenceEntry[], program: ts.Program) {
     for (const ref of refs) {
         if (!ref.isDefinition) {
             console.log(FgWhite + ref.fileName, ref.textSpan.start + Reset)
-            
+
             const targetFile = program.getSourceFile(ref.fileName)
             if (!targetFile) throw new Error("targetFile is undefined.")
 
@@ -304,19 +323,6 @@ interface ParsedInfo {
     members: MemberInfo[]
 }
 
-function isPrimitiveKind(kind: ParsedKind) {
-    switch (kind) {
-        case ParsedKind.Number:
-        case ParsedKind.String:
-        case ParsedKind.Boolean:
-        case ParsedKind.Object:
-        case ParsedKind.Undefined:
-            return true
-        default:
-            return false
-    }
-}
-
 function getPrimitiveKindName(kind: ParsedKind) {
     switch (kind) {
         case ParsedKind.Number: return 'number'
@@ -340,24 +346,6 @@ function isBaseKind(kind: ParsedKind) {
         default:
             return false
     }
-}
-
-const printingSource = ts.createSourceFile(
-    'printing',
-    '',
-    ts.ScriptTarget.ES5,
-    false,
-    ts.ScriptKind.TS
-)
-
-const printer = ts.createPrinter({
-    newLine: ts.NewLineKind.LineFeed
-})
-
-function printNode(node: ts.Node) {
-    const text = printer.printNode(ts.EmitHint.Unspecified, node, printingSource)
-    console.log(text)
-    return text
 }
 
 const exportKeywordToken = ts.createToken(ts.SyntaxKind.ExportKeyword)

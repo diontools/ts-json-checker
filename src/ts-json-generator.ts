@@ -28,7 +28,7 @@ const result = generate(tsJsonFile, configFile, fileName => {
     }
 
     console.log(Bright + FgRed + 'not resolved', fileName + Reset)
-}, "libs/lib.d.ts")
+}, "libs/lib.d.ts", "\r\n")
 
 const outputFile = path.join(path.dirname(configFile), result.fileName)
 console.info(Bright + FgWhite + 'output:', FgGreen + outputFile + Reset)
