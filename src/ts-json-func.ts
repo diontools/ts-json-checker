@@ -453,7 +453,7 @@ function generateComplexFunction(parsed: ParsedInfo) {
 function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number = 0) {
     const checks = createTypeChecks(parsed, value, name, arrayNest)
     if (checks.length > 0) {
-        const errorMessageExp = ts.createAdd(name, ts.createStringLiteral(' is not ' + checks.map(c => ParsedKind[c.kind]).join(' | ') + '.'))
+        const errorMessageExp = optimizeStringConcat(ts.createAdd(name, ts.createStringLiteral(' is not ' + checks.map(c => ParsedKind[c.kind]).join(' | ') + '.')))
 
         let st = checks[checks.length - 1]
         st.if.elseStatement = ts.createThrow(ts.createNew(typeErrorClassName, undefined, [errorMessageExp]))
@@ -500,7 +500,7 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
                 ts.createStrictEquality(ts.createTypeOf(value), ts.createStringLiteral('object')),
                 ts.createStatement(ts.createCall(ts.createIdentifier('__check_' + parsed.name), undefined, [
                     value,
-                    name
+                    optimizeStringConcat(name)
                 ]))
             ),
             kind: ParsedKind.Object,
@@ -512,4 +512,25 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
     }
 
     return checks
+}
+
+function optimizeStringConcat(exp: ts.Expression) {
+    if (ts.isBinaryExpression(exp) && exp.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+        if (ts.isBinaryExpression(exp.left)) {
+            exp.left = optimizeStringConcat(exp.left)
+        }
+
+        if (ts.isBinaryExpression(exp.right)) {
+            exp.right = optimizeStringConcat(exp.right)
+        }
+
+        if (ts.isBinaryExpression(exp.left) && ts.isStringLiteral(exp.left.right) && ts.isStringLiteral(exp.right)) {
+            exp = ts.createAdd(exp.left.left, ts.createStringLiteral(exp.left.right.text + exp.right.text))
+        }
+
+        if (ts.isBinaryExpression(exp) && ts.isStringLiteral(exp.left) && ts.isStringLiteral(exp.right)) {
+            exp = ts.createStringLiteral(exp.left.text + exp.right.text)
+        }
+    }
+    return exp
 }
