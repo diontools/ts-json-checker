@@ -277,7 +277,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
         parsed.kind = ParsedKind.Any
     } else if (type.isUnion()) {
         parsed.kind = ParsedKind.Union
-        for (const t of type.types.reverse()) {
+        for (const t of type.types) {
             //console.log(typeChecker.typeToString(t))
             const cp = parseNodeType(typeChecker, parseds, node, t)
             parsed.types.push(cp)
@@ -337,6 +337,19 @@ interface ParsedInfo {
     members: MemberInfo[]
 }
 
+function isPrimitiveKind(kind: ParsedKind) {
+    switch (kind) {
+        case ParsedKind.Number:
+        case ParsedKind.String:
+        case ParsedKind.Boolean:
+        case ParsedKind.Object:
+        case ParsedKind.Undefined:
+            return true
+        default:
+            return false
+    }
+}
+
 function getPrimitiveKindName(kind: ParsedKind) {
     switch (kind) {
         case ParsedKind.Number: return 'number'
@@ -345,20 +358,6 @@ function getPrimitiveKindName(kind: ParsedKind) {
         case ParsedKind.Object: return 'object'
         case ParsedKind.Undefined: return 'undefined'
         default: throw new Error('non primitive')
-    }
-}
-
-function isBaseKind(kind: ParsedKind) {
-    switch (kind) {
-        case ParsedKind.Number:
-        case ParsedKind.String:
-        case ParsedKind.Boolean:
-        case ParsedKind.Object:
-        case ParsedKind.Undefined:
-        case ParsedKind.Null:
-            return true
-        default:
-            return false
     }
 }
 
@@ -429,8 +428,7 @@ function generateComplexFunction(parsed: ParsedInfo) {
     const statements: ts.Statement[] = []
     for (const member of parsed.members) {
         const value = ts.createPropertyAccess(vParamName, member.name)
-        const s = createTypeCheckStatements(member.type, value, member.name, rParamName)
-        statements.push(...s)
+        createTypeCheckStatements(member.type, value, member.name, rParamName, statements)
     }
 
     const func = ts.createFunctionDeclaration(
@@ -447,106 +445,66 @@ function generateComplexFunction(parsed: ParsedInfo) {
     return func
 }
 
-function createTypeCheckStatements(parsed: ParsedInfo, value: ts.Expression, name: string, root?: ts.Identifier) {
-    const statements: ts.Statement[] = []
+function createTypeCheckStatements(parsed: ParsedInfo, value: ts.Expression, name: string, root?: ts.Identifier, statements: ts.Statement[] = []) {
+    const checks = createTypeChecks(parsed, value, name, root)
+    if (checks.length > 0) {
+        const errorMessageExp = createNameWithRoot(name + ' is not ' + checks.map(c => ParsedKind[c.kind]).join(' | ') + '.', root)
 
-    const baseKinds = getBaseKinds(parsed)
-    if (baseKinds.length > 0) {
-        statements.push(createBaseKindsCheckStatement(value, baseKinds, name, root))
-    }
+        let st = checks[checks.length - 1]
+        st.if.elseStatement = ts.createThrow(ts.createNew(typeErrorClassName, undefined, [errorMessageExp]))
 
-    const complexType = getComplexType(parsed);
-    if (complexType) {
-        const check = ts.createStatement(ts.createCall(ts.createIdentifier('__check_' + complexType.name), undefined, [
-            value,
-            root ? ts.createAdd(root, ts.createStringLiteral('.' + name)) : ts.createStringLiteral(name)
-        ]))
-
-        const notCallableKinds = getNotCallableKinds(baseKinds)
-        if (notCallableKinds.length > 0) {
-            statements.push(ts.createIf(createBaseKindsCheckExp(value, notCallableKinds), check))
-        } else {
-            statements.push(check)
+        for (let i = checks.length - 2; i >= 0; i--) {
+            checks[i].if.elseStatement = st.if
+            st = checks[i]
         }
+
+        statements.push(st.if)
     }
 
     return statements
 }
 
-function getBaseKinds(parsed: ParsedInfo, types: ParsedKind[] = []): ParsedKind[] {
-    if (isBaseKind(parsed.kind)) {
-        types.push(parsed.kind)
-    } else if (parsed.kind === ParsedKind.Union) {
-        for (const t of parsed.types) {
-            getBaseKinds(t, types)
-        }
-    } else if (parsed.kind === ParsedKind.Complex) {
-        types.push(ParsedKind.Object)
+function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: string, root?: ts.Identifier, checks: { if: ts.IfStatement, kind: ParsedKind }[] = []) {
+    if (isPrimitiveKind(parsed.kind)) {
+        checks.push({
+            if: ts.createIf(
+                ts.createStrictEquality(ts.createTypeOf(value), ts.createStringLiteral(getPrimitiveKindName(parsed.kind))),
+                ts.createBlock([])
+            ),
+            kind: parsed.kind,
+        })
     } else if (parsed.kind === ParsedKind.Array) {
-        types.push(ParsedKind.Array)
-    }
-
-    return types
-}
-
-function getComplexType(parsed: ParsedInfo) {
-    if (parsed.kind === ParsedKind.Complex) {
-        return parsed
+        checks.push({
+            if: ts.createIf(
+                ts.createCall(ts.createPropertyAccess(ts.createIdentifier('Array'), 'isArray'), undefined, [value]),
+                ts.createBlock([])
+            ),
+            kind: parsed.kind,
+        })
+    } else if (parsed.kind === ParsedKind.Complex) {
+        checks.push({
+            if: ts.createIf(
+                ts.createStrictEquality(ts.createTypeOf(value), ts.createStringLiteral('object')),
+                ts.createBlock([
+                    ts.createStatement(ts.createCall(ts.createIdentifier('__check_' + parsed.name), undefined, [
+                        value,
+                        createNameWithRoot(name, root)
+                    ]))
+                ])
+            ),
+            kind: ParsedKind.Object,
+        })
     } else if (parsed.kind === ParsedKind.Union) {
         for (const p of parsed.types) {
-            if (getComplexType(p)) {
-                return p
-            }
+            createTypeChecks(p, value, name, root, checks)
         }
     }
+
+    return checks
 }
 
-function createBaseKindsCheckStatement(value: ts.Expression, kinds: ParsedKind[], name: string, root?: ts.Identifier): ts.Statement {
-    const errorMessage = createBaseKindsCheckErrorMessage(name, kinds)
-    const errorMessageExp = root ? ts.createAdd(root, ts.createStringLiteral('.' + errorMessage)) : ts.createStringLiteral(errorMessage)
-    return ts.createIf(
-        createBaseKindsCheckExp(value, kinds),
-        ts.createThrow(ts.createNew(typeErrorClassName, undefined, [errorMessageExp]))
-    )
-}
-
-function createBaseKindsCheckErrorMessage(name: string, kinds: ParsedKind[]) {
-    return name + ' is not ' + kinds.map(k => ParsedKind[k]).join(' | ') + '.'
-}
-
-function createBaseKindsCheckExp(value: ts.Expression, kinds: ParsedKind[]): ts.Expression {
-    let exp: ts.Expression | undefined = undefined
-    for (const kind of kinds) {
-        const checkExp =
-            kind === ParsedKind.Null
-                ? createNullCheckExp(value)
-                : kind == ParsedKind.Array
-                    ? createArrayCheckExp(value)
-                    : createCheckTypeOfExp(value, getPrimitiveKindName(kind))
-
-        exp =
-            exp
-                ? ts.createLogicalAnd(checkExp, exp)
-                : checkExp
-    }
-
-    return exp!
-}
-
-function createNullCheckExp(value: ts.Expression): ts.Expression {
-    return ts.createStrictInequality(value, ts.createNull())
-}
-
-function createArrayCheckExp(value: ts.Expression): ts.Expression {
-    return ts.createPrefix(ts.SyntaxKind.ExclamationToken, ts.createCall(ts.createPropertyAccess(ts.createIdentifier('Array'), 'isArray'), undefined, [value]))
-}
-
-function createCheckTypeOfExp(value: ts.Expression, type: string): ts.Expression {
-    return ts.createStrictInequality(ts.createTypeOf(value), ts.createStringLiteral(type))
-}
-
-function getNotCallableKinds(baseKinds: ParsedKind[]) {
-    return baseKinds.filter(v => v === ParsedKind.Undefined || v === ParsedKind.Null)
+function createNameWithRoot(name: string, root?: ts.Identifier): ts.Expression {
+    return root ? ts.createAdd(root, ts.createStringLiteral('.' + name)) : ts.createStringLiteral(name)
 }
 
 function printParsed(typeChecker: ts.TypeChecker, p: ParsedInfo) {
