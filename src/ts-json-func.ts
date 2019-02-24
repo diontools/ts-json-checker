@@ -115,7 +115,7 @@ export function generate(params: GenerationParams): GenerationResult {
 
     const complexTypes = parsedInfos.filter(p => p.kind === ParsedKind.Complex)
     for (const p of complexTypes) {
-        const func = generateComplexFunction(parsedInfos, p)
+        const func = generateComplexFunction(p)
         outputTexts.push(printNode(func))
     }
 
@@ -289,9 +289,9 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
         for (const prop of type.getProperties()) {
             const propType = typeChecker.getTypeOfSymbolAtLocation(prop, node)
             const propTypeName = typeChecker.typeToString(propType)
-            parsed.members.push({ name: prop.name, type: propType })
             console.info(typeName + '.' + prop.name + ':', Bright + FgGreen + propTypeName + Reset)
-            parseNodeType(typeChecker, parseds, prop.valueDeclaration, propType)
+            const cp = parseNodeType(typeChecker, parseds, prop.valueDeclaration, propType)
+            parsed.members.push({ name: prop.name, type: cp })
         }
     } else {
         const eType = getElementTypeOfArrayType(typeChecker, type)
@@ -325,7 +325,7 @@ enum ParsedKind {
 
 interface MemberInfo {
     name: string
-    type: ts.Type
+    type: ParsedInfo
 }
 
 interface ParsedInfo {
@@ -389,10 +389,6 @@ const typeErrorClass = ts.createClassDeclaration(
 )
 
 
-function getParsed(parsedInfos: ParsedInfo[], type: ts.Type) {
-    return parsedInfos.find(p => p.keyType === type)
-}
-
 function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, parsedInfos: ParsedInfo[]) {
     const type = typeChecker.getTypeAtLocation(gen.typeNode)
     console.info('generate', Bright + FgMagenta + gen.name + Reset + '<' + Bright + FgYellow + typeChecker.typeToString(type) + Reset + '>')
@@ -403,7 +399,7 @@ function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, pars
 
     printParsed(typeChecker, parsed)
 
-    const statements = createTypeCheckStatements(parsedInfos, parsed, vParamName, vParamName.text);
+    const statements = createTypeCheckStatements(parsed, vParamName, vParamName.text);
     statements.push(ts.createReturn(ts.createTypeAssertion(gen.typeNode, vParamName)))
 
     const func = ts.createFunctionDeclaration(
@@ -420,7 +416,7 @@ function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, pars
     return func
 }
 
-function generateComplexFunction(parsedInfos: ParsedInfo[], parsed: ParsedInfo) {
+function generateComplexFunction(parsed: ParsedInfo) {
     const funcName = '__check_' + parsed.name
     console.info(Bright + FgWhite + 'generate', FgCyan + funcName + Reset)
 
@@ -432,9 +428,8 @@ function generateComplexFunction(parsedInfos: ParsedInfo[], parsed: ParsedInfo) 
 
     const statements: ts.Statement[] = []
     for (const member of parsed.members) {
-        const p = getParsed(parsedInfos, member.type)!
         const value = ts.createPropertyAccess(vParamName, member.name)
-        const s = createTypeCheckStatements(parsedInfos, p, value, member.name, rParamName)
+        const s = createTypeCheckStatements(member.type, value, member.name, rParamName)
         statements.push(...s)
     }
 
@@ -452,15 +447,15 @@ function generateComplexFunction(parsedInfos: ParsedInfo[], parsed: ParsedInfo) 
     return func
 }
 
-function createTypeCheckStatements(parsedInfos: ParsedInfo[], parsed: ParsedInfo, value: ts.Expression, name: string, root?: ts.Identifier) {
+function createTypeCheckStatements(parsed: ParsedInfo, value: ts.Expression, name: string, root?: ts.Identifier) {
     const statements: ts.Statement[] = []
 
-    const baseKinds = getBaseKinds(parsed, parsedInfos)
+    const baseKinds = getBaseKinds(parsed)
     if (baseKinds.length > 0) {
         statements.push(createBaseKindsCheckStatement(value, baseKinds, name, root))
     }
 
-    const complexType = getComplexType(parsed, parsedInfos);
+    const complexType = getComplexType(parsed);
     if (complexType) {
         const check = ts.createStatement(ts.createCall(ts.createIdentifier('__check_' + complexType.name), undefined, [
             value,
@@ -478,12 +473,12 @@ function createTypeCheckStatements(parsedInfos: ParsedInfo[], parsed: ParsedInfo
     return statements
 }
 
-function getBaseKinds(parsed: ParsedInfo, parsedInfos: ParsedInfo[], types: ParsedKind[] = []): ParsedKind[] {
+function getBaseKinds(parsed: ParsedInfo, types: ParsedKind[] = []): ParsedKind[] {
     if (isBaseKind(parsed.kind)) {
         types.push(parsed.kind)
     } else if (parsed.kind === ParsedKind.Union) {
         for (const t of parsed.types) {
-            getBaseKinds(t, parsedInfos, types)
+            getBaseKinds(t, types)
         }
     } else if (parsed.kind === ParsedKind.Complex) {
         types.push(ParsedKind.Object)
@@ -494,12 +489,12 @@ function getBaseKinds(parsed: ParsedInfo, parsedInfos: ParsedInfo[], types: Pars
     return types
 }
 
-function getComplexType(parsed: ParsedInfo, parsedInfos: ParsedInfo[]) {
+function getComplexType(parsed: ParsedInfo) {
     if (parsed.kind === ParsedKind.Complex) {
         return parsed
     } else if (parsed.kind === ParsedKind.Union) {
         for (const p of parsed.types) {
-            if (getComplexType(p, parsedInfos)) {
+            if (getComplexType(p)) {
                 return p
             }
         }
@@ -555,5 +550,5 @@ function getNotCallableKinds(baseKinds: ParsedKind[]) {
 }
 
 function printParsed(typeChecker: ts.TypeChecker, p: ParsedInfo) {
-    console.log(p.name, ParsedKind[p.kind], p.elementType && typeChecker.typeToString(p.elementType), p.types.map(t => t.name), p.members.map(m => [m.name, typeChecker.typeToString(m.type)]))
+    console.log(p.name, ParsedKind[p.kind], p.elementType && typeChecker.typeToString(p.elementType), p.types.map(t => t.name), p.members.map(m => [m.name, m.type.name]))
 }
