@@ -277,10 +277,10 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
         parsed.kind = ParsedKind.Any
     } else if (type.isUnion()) {
         parsed.kind = ParsedKind.Union
-        parsed.types = type.types.reverse()
-        for (const t of type.types) {
+        for (const t of type.types.reverse()) {
             //console.log(typeChecker.typeToString(t))
-            parseNodeType(typeChecker, parseds, node, t)
+            const cp = parseNodeType(typeChecker, parseds, node, t)
+            parsed.types.push(cp)
         }
     } else if (type.isClassOrInterface()) {
         parsed.kind = ParsedKind.Complex
@@ -333,7 +333,7 @@ interface ParsedInfo {
     keyType: ts.Type
     kind: ParsedKind
     elementType?: ts.Type
-    types: ts.Type[]
+    types: ParsedInfo[]
     members: MemberInfo[]
 }
 
@@ -483,7 +483,7 @@ function getBaseKinds(parsed: ParsedInfo, parsedInfos: ParsedInfo[], types: Pars
         types.push(parsed.kind)
     } else if (parsed.kind === ParsedKind.Union) {
         for (const t of parsed.types) {
-            getBaseKinds(getParsed(parsedInfos, t)!, parsedInfos, types)
+            getBaseKinds(t, parsedInfos, types)
         }
     } else if (parsed.kind === ParsedKind.Complex) {
         types.push(ParsedKind.Object)
@@ -498,8 +498,7 @@ function getComplexType(parsed: ParsedInfo, parsedInfos: ParsedInfo[]) {
     if (parsed.kind === ParsedKind.Complex) {
         return parsed
     } else if (parsed.kind === ParsedKind.Union) {
-        for (const t of parsed.types) {
-            const p = getParsed(parsedInfos, t)!
+        for (const p of parsed.types) {
             if (getComplexType(p, parsedInfos)) {
                 return p
             }
@@ -556,5 +555,5 @@ function getNotCallableKinds(baseKinds: ParsedKind[]) {
 }
 
 function printParsed(typeChecker: ts.TypeChecker, p: ParsedInfo) {
-    console.log(p.name, ParsedKind[p.kind], p.elementType && typeChecker.typeToString(p.elementType), p.types.map(t => typeChecker.typeToString(t)), p.members.map(m => [m.name, typeChecker.typeToString(m.type)]))
+    console.log(p.name, ParsedKind[p.kind], p.elementType && typeChecker.typeToString(p.elementType), p.types.map(t => t.name), p.members.map(m => [m.name, typeChecker.typeToString(m.type)]))
 }
