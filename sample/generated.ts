@@ -59,6 +59,14 @@ export function parseX(v: any): X | undefined {
     return <X | undefined>v;
 }
 
+export function parseNSA(v: any): (number | string)[] | undefined | X {
+    if (typeof v !== "undefined" && (typeof v !== "object" && !Array.isArray(v)))
+        throw new TypeError("v is not Array | Object | Undefined.");
+    if (typeof v !== "undefined")
+        __check_X(v, "v");
+    return <(number | string)[] | undefined | X>v;
+}
+
 function __check_T(v: any, r: string) {
     if (typeof v.n !== "number")
         throw new TypeError(r + ".n is not Number.");

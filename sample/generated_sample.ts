@@ -49,3 +49,21 @@ export function parseX(v: any) {
     if (typeof v !== "undefined") check_X(v, 'value')
     return <X | undefined>v
 }
+
+export function parseNSA(v: any): (number | string)[] | undefined | X {
+    if (typeof v === "undefined") {
+    } else if (typeof v === "object") {
+        check_X(v, "v")
+    } else if (Array.isArray(v)) {
+        for (let i = 0; i < v.length; i++) {
+            if (typeof v[i] === "number") {
+            } else if (typeof v[i] === "string") {
+            } else {
+                throw new TypeError("v[" + i + "] is not Number | String.")
+            }
+        }
+    } else {
+        throw new TypeError("v is not Array | Object | Undefined.")
+    }
+    return <(number | string)[] | undefined | X>v;
+}
