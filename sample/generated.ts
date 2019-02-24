@@ -73,7 +73,7 @@ export function parseX(v: any): X | undefined {
     return <X | undefined>v;
 }
 
-export function parseNSA(v: any): (number | string | number[])[] | undefined | X {
+export function parseNSA(v: any): (number | string | number[] | X)[] | undefined | X {
     if (typeof v === "undefined") { }
     else if (typeof v === "object")
         __check_X(v, "v");
@@ -86,11 +86,13 @@ export function parseNSA(v: any): (number | string | number[])[] | undefined | X
                     if (typeof v[i][j] === "number") { }
                     else
                         throw new TypeError("v" + "[" + i + "]" + "[" + j + "]" + " is not Number.");
+            else if (typeof v[i] === "object")
+                __check_X(v[i], "v" + "[" + i + "]");
             else
-                throw new TypeError("v" + "[" + i + "]" + " is not String | Number | Array.");
+                throw new TypeError("v" + "[" + i + "]" + " is not String | Number | Array | Object.");
     else
         throw new TypeError("v" + " is not Undefined | Object | Array.");
-    return <(number | string | number[])[] | undefined | X>v;
+    return <(number | string | number[] | X)[] | undefined | X>v;
 }
 
 function __check_T(v: any, r: string) {
