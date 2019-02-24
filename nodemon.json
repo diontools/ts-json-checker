@@ -7,5 +7,5 @@
         "**/*.spec.ts",
         "generated.ts"
     ],
-    "exec": "ts-node ./src/ts-json-generator.ts"
+    "exec": "ts-node ./src/ts-json-generator.ts ./sample/ts-json-config.ts"
 }
