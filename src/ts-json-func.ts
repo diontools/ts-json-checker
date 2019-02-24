@@ -336,6 +336,10 @@ interface ParsedInfo {
     members: MemberInfo[]
 }
 
+function printParsed(p: ParsedInfo) {
+    console.log(p.name, ParsedKind[p.kind], p.elementType && p.elementType.name, p.types.map(t => t.name), p.members.map(m => [m.name, m.type.name]))
+}
+
 function isPrimitiveKind(kind: ParsedKind) {
     switch (kind) {
         case ParsedKind.Number:
@@ -395,7 +399,7 @@ function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, pars
     const vParamName = ts.createIdentifier('v')
     const vParam = ts.createParameter(undefined, undefined, undefined, vParamName, undefined, ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword))
 
-    printParsed(typeChecker, parsed)
+    printParsed(parsed)
 
     const statement = createTypeCheckStatement(parsed, vParamName, ts.createStringLiteral(vParamName.text))
     const castRetrun = ts.createReturn(ts.createTypeAssertion(gen.typeNode, vParamName))
@@ -508,8 +512,4 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
     }
 
     return checks
-}
-
-function printParsed(typeChecker: ts.TypeChecker, p: ParsedInfo) {
-    console.log(p.name, ParsedKind[p.kind], p.elementType && p.elementType.name, p.types.map(t => t.name), p.members.map(m => [m.name, m.type.name]))
 }
