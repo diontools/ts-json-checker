@@ -485,12 +485,10 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: string
         checks.push({
             if: ts.createIf(
                 ts.createStrictEquality(ts.createTypeOf(value), ts.createStringLiteral('object')),
-                ts.createBlock([
-                    ts.createStatement(ts.createCall(ts.createIdentifier('__check_' + parsed.name), undefined, [
-                        value,
-                        createNameWithRoot(name, root)
-                    ]))
-                ])
+                ts.createStatement(ts.createCall(ts.createIdentifier('__check_' + parsed.name), undefined, [
+                    value,
+                    createNameWithRoot(name, root)
+                ]))
             ),
             kind: ParsedKind.Object,
         })
