@@ -297,9 +297,8 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
         const eType = getElementTypeOfArrayType(typeChecker, type)
         if (eType) {
             parsed.kind = ParsedKind.Array
-            parsed.elementType = eType
             console.log(FgWhite + 'array of', typeChecker.typeToString(eType) + Reset)
-            parseNodeType(typeChecker, parseds, node, eType)
+            parsed.elementType = parseNodeType(typeChecker, parseds, node, eType)
         } else {
             console.log(ts.TypeFlags[type.flags])
             throw new Error("unknown type: " + typeName)
@@ -332,7 +331,7 @@ interface ParsedInfo {
     name: string
     keyType: ts.Type
     kind: ParsedKind
-    elementType?: ts.Type
+    elementType?: ParsedInfo
     types: ParsedInfo[]
     members: MemberInfo[]
 }
@@ -398,8 +397,9 @@ function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, pars
 
     printParsed(typeChecker, parsed)
 
-    const statements = createTypeCheckStatements(parsed, vParamName, vParamName.text);
-    statements.push(ts.createReturn(ts.createTypeAssertion(gen.typeNode, vParamName)))
+    const statement = createTypeCheckStatement(parsed, vParamName, ts.createStringLiteral(vParamName.text))
+    const castRetrun = ts.createReturn(ts.createTypeAssertion(gen.typeNode, vParamName))
+    const statements = statement ? [statement, castRetrun] : [castRetrun]
 
     const func = ts.createFunctionDeclaration(
         undefined,
@@ -428,7 +428,8 @@ function generateComplexFunction(parsed: ParsedInfo) {
     const statements: ts.Statement[] = []
     for (const member of parsed.members) {
         const value = ts.createPropertyAccess(vParamName, member.name)
-        createTypeCheckStatements(member.type, value, member.name, rParamName, statements)
+        const st = createTypeCheckStatement(member.type, value, ts.createStringLiteral(member.name), rParamName)
+        if (st) statements.push(st)
     }
 
     const func = ts.createFunctionDeclaration(
@@ -445,10 +446,10 @@ function generateComplexFunction(parsed: ParsedInfo) {
     return func
 }
 
-function createTypeCheckStatements(parsed: ParsedInfo, value: ts.Expression, name: string, root?: ts.Identifier, statements: ts.Statement[] = []) {
+function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, root?: ts.Expression) {
     const checks = createTypeChecks(parsed, value, name, root)
     if (checks.length > 0) {
-        const errorMessageExp = createNameWithRoot(name + ' is not ' + checks.map(c => ParsedKind[c.kind]).join(' | ') + '.', root)
+        const errorMessageExp = createNameWithRoot(ts.createAdd(name, ts.createStringLiteral(' is not ' + checks.map(c => ParsedKind[c.kind]).join(' | ') + '.')), root)
 
         let st = checks[checks.length - 1]
         st.if.elseStatement = ts.createThrow(ts.createNew(typeErrorClassName, undefined, [errorMessageExp]))
@@ -458,13 +459,13 @@ function createTypeCheckStatements(parsed: ParsedInfo, value: ts.Expression, nam
             st = checks[i]
         }
 
-        statements.push(st.if)
+        return st.if
     }
 
-    return statements
+    return undefined
 }
 
-function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: string, root?: ts.Identifier, checks: { if: ts.IfStatement, kind: ParsedKind }[] = []) {
+function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, root?: ts.Expression, checks: { if: ts.IfStatement, kind: ParsedKind }[] = []) {
     if (isPrimitiveKind(parsed.kind)) {
         checks.push({
             if: ts.createIf(
@@ -474,10 +475,18 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: string
             kind: parsed.kind,
         })
     } else if (parsed.kind === ParsedKind.Array) {
+        if (!parsed.elementType) throw new Error('elementType is undefined')
+        const index = ts.createIdentifier('i')
+        const forStatement = ts.createFor(
+            ts.createVariableDeclarationList([ts.createVariableDeclaration(index, undefined, ts.createNumericLiteral('0'))]),
+            ts.createLessThan(index, ts.createPropertyAccess(value, 'length')),
+            ts.createPostfixIncrement(index),
+            createTypeCheckStatement(parsed.elementType, ts.createElementAccess(value, index), ts.createAdd(name, ts.createAdd(ts.createStringLiteral('['), ts.createAdd(index, ts.createStringLiteral(']')))), root) || ts.createBlock([])
+        )
         checks.push({
             if: ts.createIf(
                 ts.createCall(ts.createPropertyAccess(ts.createIdentifier('Array'), 'isArray'), undefined, [value]),
-                ts.createBlock([])
+                forStatement
             ),
             kind: parsed.kind,
         })
@@ -501,10 +510,10 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: string
     return checks
 }
 
-function createNameWithRoot(name: string, root?: ts.Identifier): ts.Expression {
-    return root ? ts.createAdd(root, ts.createStringLiteral('.' + name)) : ts.createStringLiteral(name)
+function createNameWithRoot(name: ts.Expression, root?: ts.Expression): ts.Expression {
+    return root ? ts.createAdd(root, name) : name
 }
 
 function printParsed(typeChecker: ts.TypeChecker, p: ParsedInfo) {
-    console.log(p.name, ParsedKind[p.kind], p.elementType && typeChecker.typeToString(p.elementType), p.types.map(t => t.name), p.members.map(m => [m.name, m.type.name]))
+    console.log(p.name, ParsedKind[p.kind], p.elementType && p.elementType.name, p.types.map(t => t.name), p.members.map(m => [m.name, m.type.name]))
 }

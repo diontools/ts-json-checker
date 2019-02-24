@@ -50,7 +50,7 @@ export function parseX(v: any) {
     return <X | undefined>v
 }
 
-export function parseNSA(v: any): (number | string)[] | undefined | X {
+export function parseNSA(v: any): (number | string | number[])[] | undefined | X {
     if (typeof v === "undefined") {
     } else if (typeof v === "object") {
         check_X(v, "v")
@@ -58,8 +58,15 @@ export function parseNSA(v: any): (number | string)[] | undefined | X {
         for (let i = 0; i < v.length; i++) {
             if (typeof v[i] === "number") {
             } else if (typeof v[i] === "string") {
+            } else if (Array.isArray(v[i])) {
+                for (let j = 0; j < v[i].length; j++) {
+                    if (typeof v[i][j] === "number") {
+                    } else {
+                        throw new TypeError("v" + "[" + i + "]" + "[" + j + "]" + " is not Number.")
+                    }
+                }
             } else {
-                throw new TypeError("v[" + i + "] is not Number | String.")
+                throw new TypeError("v[" + i + "]" + " is not Number | String.")
             }
         }
     } else {
