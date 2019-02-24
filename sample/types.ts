@@ -24,4 +24,5 @@ export interface T {
 export interface X {
     n2: number
     xd?: X
+    xa: X[]
 }

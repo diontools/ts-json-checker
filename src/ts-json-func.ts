@@ -428,7 +428,7 @@ function generateComplexFunction(parsed: ParsedInfo) {
     const statements: ts.Statement[] = []
     for (const member of parsed.members) {
         const value = ts.createPropertyAccess(vParamName, member.name)
-        const st = createTypeCheckStatement(member.type, value, ts.createStringLiteral(member.name), rParamName)
+        const st = createTypeCheckStatement(member.type, value, ts.createAdd(rParamName, ts.createStringLiteral('.' + member.name)))
         if (st) statements.push(st)
     }
 
@@ -446,10 +446,10 @@ function generateComplexFunction(parsed: ParsedInfo) {
     return func
 }
 
-function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, root?: ts.Expression) {
-    const checks = createTypeChecks(parsed, value, name, root)
+function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number = 0) {
+    const checks = createTypeChecks(parsed, value, name, arrayNest)
     if (checks.length > 0) {
-        const errorMessageExp = createNameWithRoot(ts.createAdd(name, ts.createStringLiteral(' is not ' + checks.map(c => ParsedKind[c.kind]).join(' | ') + '.')), root)
+        const errorMessageExp = ts.createAdd(name, ts.createStringLiteral(' is not ' + checks.map(c => ParsedKind[c.kind]).join(' | ') + '.'))
 
         let st = checks[checks.length - 1]
         st.if.elseStatement = ts.createThrow(ts.createNew(typeErrorClassName, undefined, [errorMessageExp]))
@@ -465,7 +465,7 @@ function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name
     return undefined
 }
 
-function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, root?: ts.Expression, checks: { if: ts.IfStatement, kind: ParsedKind }[] = []) {
+function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number, checks: { if: ts.IfStatement, kind: ParsedKind }[] = []) {
     if (isPrimitiveKind(parsed.kind)) {
         checks.push({
             if: ts.createIf(
@@ -476,12 +476,12 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
         })
     } else if (parsed.kind === ParsedKind.Array) {
         if (!parsed.elementType) throw new Error('elementType is undefined')
-        const index = ts.createIdentifier('i')
+        const index = ts.createIdentifier(['i', 'j', 'k', 'l', 'm', 'n'][arrayNest])
         const forStatement = ts.createFor(
             ts.createVariableDeclarationList([ts.createVariableDeclaration(index, undefined, ts.createNumericLiteral('0'))]),
             ts.createLessThan(index, ts.createPropertyAccess(value, 'length')),
             ts.createPostfixIncrement(index),
-            createTypeCheckStatement(parsed.elementType, ts.createElementAccess(value, index), ts.createAdd(name, ts.createAdd(ts.createStringLiteral('['), ts.createAdd(index, ts.createStringLiteral(']')))), root) || ts.createBlock([])
+            createTypeCheckStatement(parsed.elementType, ts.createElementAccess(value, index), ts.createAdd(ts.createAdd(ts.createAdd(name, ts.createStringLiteral('[')), index), ts.createStringLiteral(']')), arrayNest + 1) || ts.createBlock([])
         )
         checks.push({
             if: ts.createIf(
@@ -496,22 +496,18 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
                 ts.createStrictEquality(ts.createTypeOf(value), ts.createStringLiteral('object')),
                 ts.createStatement(ts.createCall(ts.createIdentifier('__check_' + parsed.name), undefined, [
                     value,
-                    createNameWithRoot(name, root)
+                    name
                 ]))
             ),
             kind: ParsedKind.Object,
         })
     } else if (parsed.kind === ParsedKind.Union) {
         for (const p of parsed.types) {
-            createTypeChecks(p, value, name, root, checks)
+            createTypeChecks(p, value, name, arrayNest, checks)
         }
     }
 
     return checks
-}
-
-function createNameWithRoot(name: ts.Expression, root?: ts.Expression): ts.Expression {
-    return root ? ts.createAdd(root, name) : name
 }
 
 function printParsed(typeChecker: ts.TypeChecker, p: ParsedInfo) {
