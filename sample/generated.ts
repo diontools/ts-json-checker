@@ -56,6 +56,99 @@ export function parseM(v: any): M {
     return <M>v;
 }
 
+export function parseNA(v: any): number[] {
+    if (Array.isArray(v))
+        for (let i = 0; i < v.length; i++)
+            if (typeof v[i] === "number") { }
+            else
+                throw new TypeError("v[" + i + "] is not Number.");
+    else
+        throw new TypeError("v is not Array.");
+    return <number[]>v;
+}
+
+export function parseSA(v: any): string[] {
+    if (Array.isArray(v))
+        for (let i = 0; i < v.length; i++)
+            if (typeof v[i] === "string") { }
+            else
+                throw new TypeError("v[" + i + "] is not String.");
+    else
+        throw new TypeError("v is not Array.");
+    return <string[]>v;
+}
+
+export function parseBA(v: any): boolean[] {
+    if (Array.isArray(v))
+        for (let i = 0; i < v.length; i++)
+            if (typeof v[i] === "boolean") { }
+            else
+                throw new TypeError("v[" + i + "] is not Boolean.");
+    else
+        throw new TypeError("v is not Array.");
+    return <boolean[]>v;
+}
+
+export function parseOA(v: any): object[] {
+    if (Array.isArray(v))
+        for (let i = 0; i < v.length; i++)
+            if (v[i] !== null && typeof v[i] === "object") { }
+            else
+                throw new TypeError("v[" + i + "] is not Object.");
+    else
+        throw new TypeError("v is not Array.");
+    return <object[]>v;
+}
+
+export function parseDA(v: any): undefined[] {
+    if (Array.isArray(v))
+        for (let i = 0; i < v.length; i++)
+            if (typeof v[i] === "undefined") { }
+            else
+                throw new TypeError("v[" + i + "] is not Undefined.");
+    else
+        throw new TypeError("v is not Array.");
+    return <undefined[]>v;
+}
+
+export function parseUA(v: any): null[] {
+    if (Array.isArray(v))
+        for (let i = 0; i < v.length; i++)
+            if (v[i] === null) { }
+            else
+                throw new TypeError("v[" + i + "] is not Null.");
+    else
+        throw new TypeError("v is not Array.");
+    return <null[]>v;
+}
+
+export function parseMA(v: any): M[] {
+    if (Array.isArray(v))
+        for (let i = 0; i < v.length; i++)
+            if (v[i] !== null && typeof v[i] === "object")
+                __check_T(v[i], "v[" + i + "]");
+            else
+                throw new TypeError("v[" + i + "] is not Object.");
+    else
+        throw new TypeError("v is not Array.");
+    return <M[]>v;
+}
+
+export function parseNAA(v: any): number[][] {
+    if (Array.isArray(v))
+        for (let i = 0; i < v.length; i++)
+            if (Array.isArray(v[i]))
+                for (let j = 0; j < v[i].length; j++)
+                    if (typeof v[i][j] === "number") { }
+                    else
+                        throw new TypeError("v[" + i + "][" + j + "] is not Number.");
+            else
+                throw new TypeError("v[" + i + "] is not Array.");
+    else
+        throw new TypeError("v is not Array.");
+    return <number[][]>v;
+}
+
 export function parseNSD(v: any): number | string | undefined {
     if (typeof v === "undefined") { }
     else if (typeof v === "string") { }
@@ -72,17 +165,6 @@ export function parseNUD(v: any): number | null | undefined {
     else
         throw new TypeError("v is not Undefined | Null | Number.");
     return <number | null | undefined>v;
-}
-
-export function parseNA(v: any): number[] {
-    if (Array.isArray(v))
-        for (let i = 0; i < v.length; i++)
-            if (typeof v[i] === "number") { }
-            else
-                throw new TypeError("v[" + i + "] is not Number.");
-    else
-        throw new TypeError("v is not Array.");
-    return <number[]>v;
 }
 
 export function parseT(v: any): M | null {

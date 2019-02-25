@@ -39,6 +39,28 @@ for (const bf of basicFuncs) {
     }
 }
 
+const arrayFuncs = [
+    { type: BasicType.number, func: g.parseNA },
+    { type: BasicType.string, func: g.parseSA },
+    { type: BasicType.boolean, func: g.parseBA },
+    { type: BasicType.object, func: g.parseOA },
+    { type: BasicType.undefined, func: g.parseDA },
+    { type: BasicType.null, func: g.parseUA },
+    { type: BasicType.complex, func: g.parseMA },
+]
+
+for (const bf of arrayFuncs) {
+    for (const p of inputPatterns) {
+        test(BasicType[bf.type] + ' array with ' + BasicType[p.type], () => expect(() => bf.func(p.value)).toThrow())
+
+        if (p.type === bf.type) {
+            test(BasicType[bf.type] + ' array with ' + BasicType[p.type] + ' array', () => expect(bf.func([p.value])).toEqual([p.value]))
+        } else {
+            test(BasicType[bf.type] + ' array with ' + BasicType[p.type] + ' array', () => expect(() => bf.func([p.value])).toThrow())
+        }
+    }
+}
+
 //test("number", () => expect(g.parseN(0)).toBe(0))
 //test("not number", () => expect(() => g.parseN('a')).toThrow())
 
