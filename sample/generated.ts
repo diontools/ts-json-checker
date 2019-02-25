@@ -48,6 +48,10 @@ export function parseU(v: any): null {
     return <null>v;
 }
 
+export function parseY(v: any): any {
+    return <any>v;
+}
+
 export function parseM(v: any): M {
     if (v !== null && typeof v === "object")
         __check_1(v, "v");
@@ -120,6 +124,14 @@ export function parseUA(v: any): null[] {
     else
         throw new TypeError("v is not Array.");
     return <null[]>v;
+}
+
+export function parseYA(v: any): any[] {
+    if (Array.isArray(v))
+        for (let i = 0; i < v.length; i++) { }
+    else
+        throw new TypeError("v is not Array.");
+    return <any[]>v;
 }
 
 export function parseMA(v: any): M[] {
