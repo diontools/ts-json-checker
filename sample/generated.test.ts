@@ -51,13 +51,24 @@ const arrayFuncs = [
 
 for (const bf of arrayFuncs) {
     for (const p of inputPatterns) {
-        test(BasicType[bf.type] + ' array with ' + BasicType[p.type], () => expect(() => bf.func(p.value)).toThrow())
+        test(BasicType[bf.type] + '[] with ' + BasicType[p.type], () => expect(() => bf.func(p.value)).toThrow())
 
         if (p.type === bf.type) {
-            test(BasicType[bf.type] + ' array with ' + BasicType[p.type] + ' array', () => expect(bf.func([p.value])).toEqual([p.value]))
+            test(BasicType[bf.type] + '[] with ' + BasicType[p.type] + '[]', () => expect(bf.func([p.value])).toEqual([p.value]))
         } else {
-            test(BasicType[bf.type] + ' array with ' + BasicType[p.type] + ' array', () => expect(() => bf.func([p.value])).toThrow())
+            test(BasicType[bf.type] + '[] with ' + BasicType[p.type] + '[]', () => expect(() => bf.func([p.value])).toThrow())
         }
+    }
+}
+
+for (const p of inputPatterns) {
+    test('number[][] with ' + BasicType[p.type], () => expect(() => g.parseNAA(p.value)).toThrow())
+    test('number[][] with ' + BasicType[p.type] + '[]', () => expect(() => g.parseNAA([p.value])).toThrow())
+
+    if (p.type === BasicType.number) {
+        test('number[][] with number[][]', () => expect(g.parseNAA([[p.value]])).toEqual([[p.value]]))
+    } else {
+        test('number[][] with ' + BasicType[p.type] + '[][]', () => expect(() => g.parseNAA([[p.value]])).toThrow())
     }
 }
 
