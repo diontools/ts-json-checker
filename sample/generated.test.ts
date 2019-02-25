@@ -32,9 +32,9 @@ const inputPatterns = [
 for (const bf of basicFuncs) {
     for (const p of inputPatterns) {
         if (p.type === bf.type) {
-            test(BasicType[bf.type] + ' with ' + BasicType[p.type], () => expect(bf.func(p.value)).toBe(p.value))
+            test('[Correct] ' + BasicType[bf.type] + ' with ' + BasicType[p.type], () => expect(bf.func(p.value)).toBe(p.value))
         } else {
-            test(BasicType[bf.type] + ' with ' + BasicType[p.type], () => expect(() => bf.func(p.value)).toThrow())
+            test('[Error]   ' + BasicType[bf.type] + ' with ' + BasicType[p.type], () => expect(() => bf.func(p.value)).toThrow())
         }
     }
 }
@@ -51,32 +51,32 @@ const arrayFuncs = [
 
 for (const bf of arrayFuncs) {
     for (const p of inputPatterns) {
-        test(BasicType[bf.type] + '[] with ' + BasicType[p.type], () => expect(() => bf.func(p.value)).toThrow())
+        test('[Error]   ' + BasicType[bf.type] + '[] with ' + BasicType[p.type], () => expect(() => bf.func(p.value)).toThrow())
 
         if (p.type === bf.type) {
-            test(BasicType[bf.type] + '[] with ' + BasicType[p.type] + '[]', () => expect(bf.func([p.value])).toEqual([p.value]))
+            test('[Correct] ' + BasicType[bf.type] + '[] with ' + BasicType[p.type] + '[]', () => expect(bf.func([p.value])).toEqual([p.value]))
         } else {
-            test(BasicType[bf.type] + '[] with ' + BasicType[p.type] + '[]', () => expect(() => bf.func([p.value])).toThrow())
+            test('[Error]   ' + BasicType[bf.type] + '[] with ' + BasicType[p.type] + '[]', () => expect(() => bf.func([p.value])).toThrow())
         }
     }
 }
 
 for (const p of inputPatterns) {
-    test('number[][] with ' + BasicType[p.type], () => expect(() => g.parseNAA(p.value)).toThrow())
-    test('number[][] with ' + BasicType[p.type] + '[]', () => expect(() => g.parseNAA([p.value])).toThrow())
+    test('[Error]   ' + 'number[][] with ' + BasicType[p.type], () => expect(() => g.parseNAA(p.value)).toThrow())
+    test('[Error]   ' + 'number[][] with ' + BasicType[p.type] + '[]', () => expect(() => g.parseNAA([p.value])).toThrow())
 
     if (p.type === BasicType.number) {
-        test('number[][] with number[][]', () => expect(g.parseNAA([[p.value]])).toEqual([[p.value]]))
+        test('[Correct] ' + 'number[][] with number[][]', () => expect(g.parseNAA([[p.value]])).toEqual([[p.value]]))
     } else {
-        test('number[][] with ' + BasicType[p.type] + '[][]', () => expect(() => g.parseNAA([[p.value]])).toThrow())
+        test('[Error]   ' + 'number[][] with ' + BasicType[p.type] + '[][]', () => expect(() => g.parseNAA([[p.value]])).toThrow())
     }
 }
 
 for (const p of inputPatterns) {
     if ([BasicType.number, BasicType.string, BasicType.boolean, BasicType.null, BasicType.undefined].some(t => t === p.type)) {
-        test('number | string | boolean | null | undefined with ' + BasicType[p.type], () => expect(g.parseNSBUD(p.value)).toEqual(p.value))
+        test('[Correct] ' + 'number | string | boolean | null | undefined with ' + BasicType[p.type], () => expect(g.parseNSBUD(p.value)).toEqual(p.value))
     } else {
-        test('number | string | boolean | null | undefined with ' + BasicType[p.type], () => expect(() => g.parseNSBUD(p.value)).toThrow())
+        test('[Error]   ' + 'number | string | boolean | null | undefined with ' + BasicType[p.type], () => expect(() => g.parseNSBUD(p.value)).toThrow())
     }
 }
 
