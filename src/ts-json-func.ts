@@ -282,7 +282,14 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
             //console.log(typeChecker.typeToString(t))
             const cp = parseNodeType(typeChecker, parseds, node, t)
             if (cp.kind !== ParsedKind.Boolean || !parsed.types.some(t => t.kind === ParsedKind.Boolean)) {
-                parsed.types.push(cp)
+                if (cp.kind === ParsedKind.Array) {
+                    // array before complex
+                    const idx = parsed.types.findIndex(p => p.kind === ParsedKind.Complex)
+                    if (idx >= 0) parsed.types.splice(idx, 0, cp)
+                    else parsed.types.push(cp)
+                } else {
+                    parsed.types.push(cp)
+                }
             }
         }
     } else if (type.isClassOrInterface()) {
@@ -342,7 +349,7 @@ function parseComplexType(parsed: ParsedInfo, parseds: ParsedInfo[], typeName: s
         const propType = typeChecker.getTypeOfSymbolAtLocation(prop, node)
         const propTypeName = typeChecker.typeToString(propType)
         console.info(typeName + '.' + prop.name + ':', Bright + FgGreen + propTypeName + Reset)
-        
+
         const cp = parseNodeType(typeChecker, parseds, prop.valueDeclaration, propType)
         parsed.members.push({ name: prop.name, type: cp })
     }

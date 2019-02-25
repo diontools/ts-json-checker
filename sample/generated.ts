@@ -178,15 +178,10 @@ export function parseXD(v: any): X | undefined {
     return <X | undefined>v;
 }
 
-export function parseNSA(v: any): (number | string | number[] | X)[] | undefined | X {
-    if (typeof v === "undefined") { }
-    else if (v !== null && typeof v === "object")
-        __check_2(v, "v");
-    else if (Array.isArray(v))
+export function parseXAX(v: any): (number[] | X)[] | X {
+    if (Array.isArray(v))
         for (let i = 0; i < v.length; i++)
-            if (typeof v[i] === "string") { }
-            else if (typeof v[i] === "number") { }
-            else if (Array.isArray(v[i]))
+            if (Array.isArray(v[i]))
                 for (let j = 0; j < v[i].length; j++)
                     if (typeof v[i][j] === "number") { }
                     else
@@ -194,10 +189,12 @@ export function parseNSA(v: any): (number | string | number[] | X)[] | undefined
             else if (v[i] !== null && typeof v[i] === "object")
                 __check_2(v[i], "v[" + i + "]");
             else
-                throw new TypeError("v[" + i + "] is not String | Number | Array | Object.");
+                throw new TypeError("v[" + i + "] is not Array | Object.");
+    else if (v !== null && typeof v === "object")
+        __check_2(v, "v");
     else
-        throw new TypeError("v is not Undefined | Object | Array.");
-    return <(number | string | number[] | X)[] | undefined | X>v;
+        throw new TypeError("v is not Array | Object.");
+    return <(number[] | X)[] | X>v;
 }
 
 export function parseTL(v: any): {

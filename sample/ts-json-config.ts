@@ -23,6 +23,6 @@ generate<number[][]>("parseNAA")
 generate<number | string | boolean | null | undefined>("parseNSBUD")
 generate<M | null>("parseMU")
 generate<X | undefined>("parseXD")
-generate<(number | string | number[] | X)[] | undefined | X>("parseNSA")
+generate<(number[] | X)[] | X>("parseXAX")
 
 generate<{ x: number }>("parseTL")
