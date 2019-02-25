@@ -72,6 +72,14 @@ for (const p of inputPatterns) {
     }
 }
 
+for (const p of inputPatterns) {
+    if ([BasicType.number, BasicType.string, BasicType.boolean, BasicType.null, BasicType.undefined].some(t => t === p.type)) {
+        test('number | string | boolean | null | undefined with ' + BasicType[p.type], () => expect(g.parseNSBUD(p.value)).toEqual(p.value))
+    } else {
+        test('number | string | boolean | null | undefined with ' + BasicType[p.type], () => expect(() => g.parseNSBUD(p.value)).toThrow())
+    }
+}
+
 //test("number", () => expect(g.parseN(0)).toBe(0))
 //test("not number", () => expect(() => g.parseN('a')).toThrow())
 
