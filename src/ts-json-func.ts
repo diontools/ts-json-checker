@@ -257,6 +257,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
         kind: ParsedKind.Any,
         types: [],
         members: [],
+        complexNumber: -1,
     }
     parseds.push(parsed)
     console.log(FgWhite + 'parse ' + typeName + Reset)
@@ -286,6 +287,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
         }
     } else if (type.isClassOrInterface()) {
         parsed.kind = ParsedKind.Complex
+        parsed.complexNumber = parseds.filter(p => p.kind === ParsedKind.Complex).length
         console.info('complex type:', Bright + FgCyan + typeName + Reset)
 
         for (const prop of type.getProperties()) {
@@ -301,6 +303,18 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
             parsed.kind = ParsedKind.Array
             console.log(FgWhite + 'array of', typeChecker.typeToString(eType) + Reset)
             parsed.elementType = parseNodeType(typeChecker, parseds, node, eType)
+        } else if (ts.isTypeLiteralNode(node)) {
+            parsed.kind = ParsedKind.Complex
+            parsed.complexNumber = parseds.filter(p => p.kind === ParsedKind.Complex).length
+            console.info('complex literal type:', Bright + FgCyan + typeName + Reset)
+
+            for (const prop of type.getProperties()) {
+                const propType = typeChecker.getTypeOfSymbolAtLocation(prop, node)
+                const propTypeName = typeChecker.typeToString(propType)
+                console.info(typeName + '.' + prop.name + ':', Bright + FgGreen + propTypeName + Reset)
+                const cp = parseNodeType(typeChecker, parseds, prop.valueDeclaration, propType)
+                parsed.members.push({ name: prop.name, type: cp })
+            }
         } else {
             console.log(ts.TypeFlags[type.flags])
             throw new Error("unknown type: " + typeName)
@@ -336,6 +350,7 @@ interface ParsedInfo {
     elementType?: ParsedInfo
     types: ParsedInfo[]
     members: MemberInfo[]
+    complexNumber: number
 }
 
 function printParsed(p: ParsedInfo) {
@@ -422,7 +437,7 @@ function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, pars
 }
 
 function generateComplexFunction(parsed: ParsedInfo) {
-    const funcName = '__check_' + parsed.name
+    const funcName = '__check_' + parsed.complexNumber
     console.info(Bright + FgWhite + 'generate', FgCyan + funcName + Reset)
 
     const vParamName = ts.createIdentifier('v')
@@ -518,7 +533,7 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
             if: ts.createIf(
                 // value !== null && typeof value === "object"
                 ts.createLogicalAnd(ts.createStrictInequality(value, ts.createNull()), ts.createStrictEquality(ts.createTypeOf(value), ts.createStringLiteral('object'))),
-                ts.createStatement(ts.createCall(ts.createIdentifier('__check_' + parsed.name), undefined, [
+                ts.createStatement(ts.createCall(ts.createIdentifier('__check_' + parsed.complexNumber), undefined, [
                     value,
                     optimizeStringConcat(name)
                 ]))

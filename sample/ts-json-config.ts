@@ -24,3 +24,5 @@ generate<number | string | boolean | null | undefined>("parseNSBUD")
 generate<M | null>("parseT")
 generate<X | undefined>("parseX")
 generate<(number | string | number[] | X)[] | undefined | X>("parseNSA")
+
+generate<{ x: number }>("parseTL")
