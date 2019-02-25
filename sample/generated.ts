@@ -39,7 +39,7 @@ export function parseNUD(v: any): number | null | undefined {
 
 export function parseNA(v: any): number[] {
     if (Array.isArray(v))
-        for (var i = 0; i < v.length; i++)
+        for (let i = 0; i < v.length; i++)
             if (typeof v[i] === "number") { }
             else
                 throw new TypeError("v[" + i + "] is not Number.");
@@ -78,11 +78,11 @@ export function parseNSA(v: any): (number | string | number[] | X)[] | undefined
     else if (typeof v === "object")
         __check_X(v, "v");
     else if (Array.isArray(v))
-        for (var i = 0; i < v.length; i++)
+        for (let i = 0; i < v.length; i++)
             if (typeof v[i] === "string") { }
             else if (typeof v[i] === "number") { }
             else if (Array.isArray(v[i]))
-                for (var j = 0; j < v[i].length; j++)
+                for (let j = 0; j < v[i].length; j++)
                     if (typeof v[i][j] === "number") { }
                     else
                         throw new TypeError("v[" + i + "][" + j + "] is not Number.");
@@ -109,32 +109,32 @@ function __check_T(v: any, r: string) {
     else
         throw new TypeError(r + ".d is not Undefined.");
     if (Array.isArray(v.na))
-        for (var i = 0; i < v.na.length; i++)
+        for (let i = 0; i < v.na.length; i++)
             if (typeof v.na[i] === "number") { }
             else
                 throw new TypeError(r + ".na[" + i + "] is not Number.");
     else
         throw new TypeError(r + ".na is not Array.");
     if (Array.isArray(v.sa))
-        for (var i = 0; i < v.sa.length; i++)
+        for (let i = 0; i < v.sa.length; i++)
             if (typeof v.sa[i] === "string") { }
             else
                 throw new TypeError(r + ".sa[" + i + "] is not String.");
     else
         throw new TypeError(r + ".sa is not Array.");
     if (Array.isArray(v.ba))
-        for (var i = 0; i < v.ba.length; i++)
+        for (let i = 0; i < v.ba.length; i++)
             if (typeof v.ba[i] === "boolean") { }
             else
                 throw new TypeError(r + ".ba[" + i + "] is not Boolean.");
     else
         throw new TypeError(r + ".ba is not Array.");
     if (Array.isArray(v.ua))
-        for (var i = 0; i < v.ua.length; i++) { }
+        for (let i = 0; i < v.ua.length; i++) { }
     else
         throw new TypeError(r + ".ua is not Array.");
     if (Array.isArray(v.da))
-        for (var i = 0; i < v.da.length; i++)
+        for (let i = 0; i < v.da.length; i++)
             if (typeof v.da[i] === "undefined") { }
             else
                 throw new TypeError(r + ".da[" + i + "] is not Undefined.");
@@ -142,7 +142,7 @@ function __check_T(v: any, r: string) {
         throw new TypeError(r + ".da is not Array.");
     if (typeof v.nad === "undefined") { }
     else if (Array.isArray(v.nad))
-        for (var i = 0; i < v.nad.length; i++)
+        for (let i = 0; i < v.nad.length; i++)
             if (typeof v.nad[i] === "number") { }
             else
                 throw new TypeError(r + ".nad[" + i + "] is not Number.");
@@ -179,7 +179,7 @@ function __check_T(v: any, r: string) {
     else
         throw new TypeError(r + ".xud is not Undefined | Object.");
     if (Array.isArray(v.xa))
-        for (var i = 0; i < v.xa.length; i++)
+        for (let i = 0; i < v.xa.length; i++)
             if (typeof v.xa[i] === "object")
                 __check_X(v.xa[i], r + ".xa[" + i + "]");
             else
@@ -198,7 +198,7 @@ function __check_X(v: any, r: string) {
     else
         throw new TypeError(r + ".xd is not Undefined | Object.");
     if (Array.isArray(v.xa))
-        for (var i = 0; i < v.xa.length; i++)
+        for (let i = 0; i < v.xa.length; i++)
             if (typeof v.xa[i] === "object")
                 __check_X(v.xa[i], r + ".xa[" + i + "]");
             else

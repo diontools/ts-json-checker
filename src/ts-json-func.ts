@@ -482,7 +482,7 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
         if (!parsed.elementType) throw new Error('elementType is undefined')
         const index = ts.createIdentifier(['i', 'j', 'k', 'l', 'm', 'n'][arrayNest])
         const forStatement = ts.createFor(
-            ts.createVariableDeclarationList([ts.createVariableDeclaration(index, undefined, ts.createNumericLiteral('0'))]),
+            ts.createVariableDeclarationList([ts.createVariableDeclaration(index, undefined, ts.createNumericLiteral('0'))], ts.NodeFlags.Let),
             ts.createLessThan(index, ts.createPropertyAccess(value, 'length')),
             ts.createPostfixIncrement(index),
             createTypeCheckStatement(parsed.elementType, ts.createElementAccess(value, index), ts.createAdd(ts.createAdd(ts.createAdd(name, ts.createStringLiteral('[')), index), ts.createStringLiteral(']')), arrayNest + 1) || ts.createBlock([])
