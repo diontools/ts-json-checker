@@ -160,7 +160,7 @@ export function parseNSBUD(v: any): number | string | boolean | null | undefined
     return <number | string | boolean | null | undefined>v;
 }
 
-export function parseT(v: any): M | null {
+export function parseMU(v: any): M | null {
     if (v === null) { }
     else if (v !== null && typeof v === "object")
         __check_1(v, "v");
@@ -169,7 +169,7 @@ export function parseT(v: any): M | null {
     return <M | null>v;
 }
 
-export function parseX(v: any): X | undefined {
+export function parseXD(v: any): X | undefined {
     if (typeof v === "undefined") { }
     else if (v !== null && typeof v === "object")
         __check_2(v, "v");
