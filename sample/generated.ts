@@ -127,8 +127,7 @@ export function parseUA(v: any): null[] {
 }
 
 export function parseYA(v: any): any[] {
-    if (Array.isArray(v))
-        for (let i = 0; i < v.length; i++) { }
+    if (Array.isArray(v)) { }
     else
         throw new TypeError("v is not Array.");
     return <any[]>v;
