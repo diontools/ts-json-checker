@@ -286,17 +286,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
             }
         }
     } else if (type.isClassOrInterface()) {
-        parsed.kind = ParsedKind.Complex
-        parsed.complexNumber = parseds.filter(p => p.kind === ParsedKind.Complex).length
-        console.info('complex type:', Bright + FgCyan + typeName + Reset)
-
-        for (const prop of type.getProperties()) {
-            const propType = typeChecker.getTypeOfSymbolAtLocation(prop, node)
-            const propTypeName = typeChecker.typeToString(propType)
-            console.info(typeName + '.' + prop.name + ':', Bright + FgGreen + propTypeName + Reset)
-            const cp = parseNodeType(typeChecker, parseds, prop.valueDeclaration, propType)
-            parsed.members.push({ name: prop.name, type: cp })
-        }
+        parseComplexType(parsed, parseds, typeName, type, typeChecker, node)
     } else {
         const eType = getElementTypeOfArrayType(typeChecker, type)
         if (eType) {
@@ -304,17 +294,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
             console.log(FgWhite + 'array of', typeChecker.typeToString(eType) + Reset)
             parsed.elementType = parseNodeType(typeChecker, parseds, node, eType)
         } else if (ts.isTypeLiteralNode(node)) {
-            parsed.kind = ParsedKind.Complex
-            parsed.complexNumber = parseds.filter(p => p.kind === ParsedKind.Complex).length
-            console.info('complex literal type:', Bright + FgCyan + typeName + Reset)
-
-            for (const prop of type.getProperties()) {
-                const propType = typeChecker.getTypeOfSymbolAtLocation(prop, node)
-                const propTypeName = typeChecker.typeToString(propType)
-                console.info(typeName + '.' + prop.name + ':', Bright + FgGreen + propTypeName + Reset)
-                const cp = parseNodeType(typeChecker, parseds, prop.valueDeclaration, propType)
-                parsed.members.push({ name: prop.name, type: cp })
-            }
+            parseComplexType(parsed, parseds, typeName, type, typeChecker, node)
         } else {
             console.log(ts.TypeFlags[type.flags])
             throw new Error("unknown type: " + typeName)
@@ -351,6 +331,21 @@ interface ParsedInfo {
     types: ParsedInfo[]
     members: MemberInfo[]
     complexNumber: number
+}
+
+function parseComplexType(parsed: ParsedInfo, parseds: ParsedInfo[], typeName: string, type: ts.Type, typeChecker: ts.TypeChecker, node: ts.Node) {
+    parsed.kind = ParsedKind.Complex
+    parsed.complexNumber = parseds.filter(p => p.kind === ParsedKind.Complex).length
+    console.info('complex type:', Bright + FgCyan + typeName + Reset)
+
+    for (const prop of type.getProperties()) {
+        const propType = typeChecker.getTypeOfSymbolAtLocation(prop, node)
+        const propTypeName = typeChecker.typeToString(propType)
+        console.info(typeName + '.' + prop.name + ':', Bright + FgGreen + propTypeName + Reset)
+        
+        const cp = parseNodeType(typeChecker, parseds, prop.valueDeclaration, propType)
+        parsed.members.push({ name: prop.name, type: cp })
+    }
 }
 
 function printParsed(p: ParsedInfo) {
