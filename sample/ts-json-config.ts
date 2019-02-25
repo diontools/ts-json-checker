@@ -4,7 +4,11 @@ import { T as M, X } from './types'
 const fileName = './generated.ts'
 
 generate<number>("parseN")
+generate<string>("parseS")
+generate<boolean>("parseB")
 generate<object>("parseO")
+generate<undefined>("parseD")
+generate<null>("parseU")
 generate<number | string | undefined>("parseNSD")
 generate<number | null | undefined>("parseNUD")
 generate<number[]>("parseNA")

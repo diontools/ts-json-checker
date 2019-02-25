@@ -470,10 +470,27 @@ function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name
 }
 
 function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number, checks: { if: ts.IfStatement, kind: ParsedKind }[] = []) {
-    if (isPrimitiveKind(parsed.kind)) {
+    if (parsed.kind === ParsedKind.Object) {
+        checks.push({
+            if: ts.createIf(
+                // value !== null && typeof value === "object"
+                ts.createLogicalAnd(ts.createStrictInequality(value, ts.createNull()), ts.createStrictEquality(ts.createTypeOf(value), ts.createStringLiteral(getPrimitiveKindName(parsed.kind)))),
+                ts.createBlock([])
+            ),
+            kind: parsed.kind,
+        })
+    } else if (isPrimitiveKind(parsed.kind)) {
         checks.push({
             if: ts.createIf(
                 ts.createStrictEquality(ts.createTypeOf(value), ts.createStringLiteral(getPrimitiveKindName(parsed.kind))),
+                ts.createBlock([])
+            ),
+            kind: parsed.kind,
+        })
+    } else if (parsed.kind === ParsedKind.Null) {
+        checks.push({
+            if: ts.createIf(
+                ts.createStrictEquality(value, ts.createNull()),
                 ts.createBlock([])
             ),
             kind: parsed.kind,
