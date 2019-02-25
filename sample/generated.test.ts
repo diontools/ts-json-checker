@@ -7,6 +7,7 @@ enum BasicType {
     object,
     undefined,
     null,
+    complex,
 }
 
 const basicFuncs = [
@@ -16,6 +17,7 @@ const basicFuncs = [
     { type: BasicType.object, func: g.parseO },
     { type: BasicType.undefined, func: g.parseD },
     { type: BasicType.null, func: g.parseU },
+    { type: BasicType.complex, func: g.parseM },
 ]
 
 const inputPatterns = [

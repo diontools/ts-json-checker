@@ -514,7 +514,8 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
     } else if (parsed.kind === ParsedKind.Complex) {
         checks.push({
             if: ts.createIf(
-                ts.createStrictEquality(ts.createTypeOf(value), ts.createStringLiteral('object')),
+                // value !== null && typeof value === "object"
+                ts.createLogicalAnd(ts.createStrictInequality(value, ts.createNull()), ts.createStrictEquality(ts.createTypeOf(value), ts.createStringLiteral('object'))),
                 ts.createStatement(ts.createCall(ts.createIdentifier('__check_' + parsed.name), undefined, [
                     value,
                     optimizeStringConcat(name)

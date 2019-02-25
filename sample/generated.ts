@@ -48,6 +48,14 @@ export function parseU(v: any): null {
     return <null>v;
 }
 
+export function parseM(v: any): M {
+    if (v !== null && typeof v === "object")
+        __check_T(v, "v");
+    else
+        throw new TypeError("v is not Object.");
+    return <M>v;
+}
+
 export function parseNSD(v: any): number | string | undefined {
     if (typeof v === "undefined") { }
     else if (typeof v === "string") { }
@@ -77,17 +85,9 @@ export function parseNA(v: any): number[] {
     return <number[]>v;
 }
 
-export function parseM(v: any): M {
-    if (typeof v === "object")
-        __check_T(v, "v");
-    else
-        throw new TypeError("v is not Object.");
-    return <M>v;
-}
-
 export function parseT(v: any): M | null {
     if (v === null) { }
-    else if (typeof v === "object")
+    else if (v !== null && typeof v === "object")
         __check_T(v, "v");
     else
         throw new TypeError("v is not Null | Object.");
@@ -96,7 +96,7 @@ export function parseT(v: any): M | null {
 
 export function parseX(v: any): X | undefined {
     if (typeof v === "undefined") { }
-    else if (typeof v === "object")
+    else if (v !== null && typeof v === "object")
         __check_X(v, "v");
     else
         throw new TypeError("v is not Undefined | Object.");
@@ -105,7 +105,7 @@ export function parseX(v: any): X | undefined {
 
 export function parseNSA(v: any): (number | string | number[] | X)[] | undefined | X {
     if (typeof v === "undefined") { }
-    else if (typeof v === "object")
+    else if (v !== null && typeof v === "object")
         __check_X(v, "v");
     else if (Array.isArray(v))
         for (let i = 0; i < v.length; i++)
@@ -116,7 +116,7 @@ export function parseNSA(v: any): (number | string | number[] | X)[] | undefined
                     if (typeof v[i][j] === "number") { }
                     else
                         throw new TypeError("v[" + i + "][" + j + "] is not Number.");
-            else if (typeof v[i] === "object")
+            else if (v[i] !== null && typeof v[i] === "object")
                 __check_X(v[i], "v[" + i + "]");
             else
                 throw new TypeError("v[" + i + "] is not String | Number | Array | Object.");
@@ -201,24 +201,24 @@ function __check_T(v: any, r: string) {
     else if (v.ud === null) { }
     else
         throw new TypeError(r + ".ud is not Undefined | Null.");
-    if (typeof v.x === "object")
+    if (v.x !== null && typeof v.x === "object")
         __check_X(v.x, r + ".x");
     else
         throw new TypeError(r + ".x is not Object.");
     if (typeof v.xd === "undefined") { }
-    else if (typeof v.xd === "object")
+    else if (v.xd !== null && typeof v.xd === "object")
         __check_X(v.xd, r + ".xd");
     else
         throw new TypeError(r + ".xd is not Undefined | Object.");
     if (typeof v.xud === "undefined") { }
     else if (v.xud === null) { }
-    else if (typeof v.xud === "object")
+    else if (v.xud !== null && typeof v.xud === "object")
         __check_X(v.xud, r + ".xud");
     else
         throw new TypeError(r + ".xud is not Undefined | Null | Object.");
     if (Array.isArray(v.xa))
         for (let i = 0; i < v.xa.length; i++)
-            if (typeof v.xa[i] === "object")
+            if (v.xa[i] !== null && typeof v.xa[i] === "object")
                 __check_X(v.xa[i], r + ".xa[" + i + "]");
             else
                 throw new TypeError(r + ".xa[" + i + "] is not Object.");
@@ -231,13 +231,13 @@ function __check_X(v: any, r: string) {
     else
         throw new TypeError(r + ".n2 is not Number.");
     if (typeof v.xd === "undefined") { }
-    else if (typeof v.xd === "object")
+    else if (v.xd !== null && typeof v.xd === "object")
         __check_X(v.xd, r + ".xd");
     else
         throw new TypeError(r + ".xd is not Undefined | Object.");
     if (Array.isArray(v.xa))
         for (let i = 0; i < v.xa.length; i++)
-            if (typeof v.xa[i] === "object")
+            if (v.xa[i] !== null && typeof v.xa[i] === "object")
                 __check_X(v.xa[i], r + ".xa[" + i + "]");
             else
                 throw new TypeError(r + ".xa[" + i + "] is not Object.");
