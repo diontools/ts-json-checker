@@ -149,22 +149,15 @@ export function parseNAA(v: any): number[][] {
     return <number[][]>v;
 }
 
-export function parseNSD(v: any): number | string | undefined {
-    if (typeof v === "undefined") { }
-    else if (typeof v === "string") { }
-    else if (typeof v === "number") { }
-    else
-        throw new TypeError("v is not Undefined | String | Number.");
-    return <number | string | undefined>v;
-}
-
-export function parseNUD(v: any): number | null | undefined {
+export function parseNSBUD(v: any): number | string | boolean | null | undefined {
     if (typeof v === "undefined") { }
     else if (v === null) { }
+    else if (typeof v === "string") { }
     else if (typeof v === "number") { }
+    else if (typeof v === "boolean") { }
     else
-        throw new TypeError("v is not Undefined | Null | Number.");
-    return <number | null | undefined>v;
+        throw new TypeError("v is not Undefined | Null | String | Number | Boolean.");
+    return <number | string | boolean | null | undefined>v;
 }
 
 export function parseT(v: any): M | null {
@@ -276,9 +269,8 @@ function __check_T(v: any, r: string) {
         throw new TypeError(r + ".sd is not Undefined | String.");
     if (typeof v.bd === "undefined") { }
     else if (typeof v.bd === "boolean") { }
-    else if (typeof v.bd === "boolean") { }
     else
-        throw new TypeError(r + ".bd is not Undefined | Boolean | Boolean.");
+        throw new TypeError(r + ".bd is not Undefined | Boolean.");
     if (typeof v.ud === "undefined") { }
     else if (v.ud === null) { }
     else

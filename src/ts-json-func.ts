@@ -280,7 +280,9 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
         for (const t of type.types) {
             //console.log(typeChecker.typeToString(t))
             const cp = parseNodeType(typeChecker, parseds, node, t)
-            parsed.types.push(cp)
+            if (cp.kind !== ParsedKind.Boolean || !parsed.types.some(t => t.kind === ParsedKind.Boolean)) {
+                parsed.types.push(cp)
+            }
         }
     } else if (type.isClassOrInterface()) {
         parsed.kind = ParsedKind.Complex
