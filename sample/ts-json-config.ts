@@ -28,3 +28,5 @@ generate<X | undefined>("parseXD")
 generate<(number[] | X)[] | X>("parseXAX")
 
 generate<{ x: number }>("parseTL")
+generate<"abc">("parseSL")
+generate<"abc" | "xyz">("parseSL2")

@@ -19,25 +19,7 @@ export interface GenerationResult {
     code: string
 }
 
-const printingSource = ts.createSourceFile(
-    'printing',
-    '',
-    ts.ScriptTarget.ES5,
-    false,
-    ts.ScriptKind.TS
-)
-
 export function generate(params: GenerationParams): GenerationResult {
-    const printer = ts.createPrinter({
-        newLine: params.eol === "\r\n" ? ts.NewLineKind.CarriageReturnLineFeed : ts.NewLineKind.LineFeed
-    })
-
-    function printNode(node: ts.Node) {
-        const text = printer.printNode(ts.EmitHint.Unspecified, node, printingSource)
-        console.log(text)
-        return text
-    }
-
     const files = [params.tsJsonFile, params.configFile]
 
     const compilerOptions: ts.CompilerOptions = {
@@ -85,6 +67,16 @@ export function generate(params: GenerationParams): GenerationResult {
 
     for (const diag of services.getCompilerOptionsDiagnostics()) {
         console.log(diag)
+    }
+
+    const printer = ts.createPrinter({
+        newLine: params.eol === "\r\n" ? ts.NewLineKind.CarriageReturnLineFeed : ts.NewLineKind.LineFeed
+    })
+
+    function printNode(node: ts.Node) {
+        const text = printer.printNode(ts.EmitHint.Unspecified, node, tsJsonConfigSource!)
+        console.log(text)
+        return text
     }
 
     console.log(FgWhite + 'generate function finding...' + Reset)

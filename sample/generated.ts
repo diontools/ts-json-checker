@@ -220,6 +220,21 @@ export function parseTL(v: any): {
     }>v;
 }
 
+export function parseSL(v: any): "abc" {
+    if (typeof v === "string") { }
+    else
+        throw new TypeError("v is not String.");
+    return <"abc">v;
+}
+
+export function parseSL2(v: any): "abc" | "xyz" {
+    if (typeof v === "string") { }
+    else if (typeof v === "string") { }
+    else
+        throw new TypeError("v is not String | String.");
+    return <"abc" | "xyz">v;
+}
+
 function __check_1(v: any, r: string) {
     if (typeof v.n === "number") { }
     else
