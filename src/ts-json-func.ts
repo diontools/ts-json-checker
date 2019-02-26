@@ -231,6 +231,14 @@ function isNumberLiteral(type: ts.Type): type is ts.NumberLiteralType {
     return (type.flags & ts.TypeFlags.NumberLiteral) !== 0
 }
 
+function isBigInt(type: ts.Type) {
+    return (type.flags & ts.TypeFlags.BigInt) !== 0
+}
+
+function isBigIntLiteral(type: ts.Type): type is ts.BigIntLiteralType {
+    return (type.flags & ts.TypeFlags.BigIntLiteral) !== 0
+}
+
 function isString(type: ts.Type) {
     return (type.flags & ts.TypeFlags.String) !== 0
 }
@@ -287,6 +295,11 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
         parsed.kind = ParsedKind.Number
     } else if (isNumberLiteral(type)) {
         parsed.kind = ParsedKind.NumberLiteral
+        parsed.literalValue = type.value
+    } else if (isBigInt(type)) {
+        parsed.kind = ParsedKind.BigInt
+    } else if (isBigIntLiteral(type)) {
+        parsed.kind = ParsedKind.BigIntLiteral
         parsed.literalValue = type.value
     } else if (isString(type)) {
         parsed.kind = ParsedKind.String
@@ -348,6 +361,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
 
 enum ParsedKind {
     Number,
+    BigInt,
     String,
     Boolean,
     Object,
@@ -355,6 +369,7 @@ enum ParsedKind {
     Null,
     Any,
     NumberLiteral,
+    BigIntLiteral,
     StringLiteral,
     BooleanLiteral,
 
@@ -376,7 +391,7 @@ interface ParsedInfo {
     types: ParsedInfo[]
     members: MemberInfo[]
     complexNumber: number
-    literalValue?: string | boolean | number
+    literalValue?: string | boolean | number | ts.PseudoBigInt
 }
 
 function parseComplexType(parsed: ParsedInfo, parseds: ParsedInfo[], typeName: string, type: ts.Type, typeChecker: ts.TypeChecker, node: ts.Node) {
@@ -401,6 +416,7 @@ function printParsed(p: ParsedInfo) {
 function isPrimitiveKind(kind: ParsedKind) {
     switch (kind) {
         case ParsedKind.Number:
+        case ParsedKind.BigInt:
         case ParsedKind.String:
         case ParsedKind.Boolean:
         case ParsedKind.Object:
@@ -414,6 +430,7 @@ function isPrimitiveKind(kind: ParsedKind) {
 function getPrimitiveKindName(kind: ParsedKind) {
     switch (kind) {
         case ParsedKind.Number: return 'number'
+        case ParsedKind.BigInt: return 'bigint'
         case ParsedKind.String: return 'string'
         case ParsedKind.Boolean: return 'boolean'
         case ParsedKind.Object: return 'object'
@@ -427,6 +444,7 @@ function isLiteralKind(kind: ParsedKind) {
         case ParsedKind.BooleanLiteral:
         case ParsedKind.NumberLiteral:
         case ParsedKind.StringLiteral:
+        case ParsedKind.BigIntLiteral:
             return true
         default:
             return false
@@ -528,7 +546,7 @@ function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name
                 ts.createStringLiteral(
                     ' is not '
                     + checks
-                        .map(c => isLiteralKind(c.kind) ? c.literal : ParsedKind[c.kind])
+                        .map(c => isLiteralKind(c.kind) ? getLiteralString(c.kind, c.literal) : ParsedKind[c.kind])
                         .join(' | ')
                     + '.'
                 )
@@ -547,6 +565,20 @@ function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name
     }
 
     return undefined
+}
+
+function getLiteralString(kind: ParsedKind, value: any) {
+    switch (kind) {
+        case ParsedKind.NumberLiteral:
+        case ParsedKind.StringLiteral:
+        case ParsedKind.BooleanLiteral:
+            return value.toString()
+        case ParsedKind.BigIntLiteral:
+            const bi = <ts.PseudoBigInt>value
+            return (bi.negative ? '-' : '') + bi.base10Value + 'n'
+        default:
+            throw new Error('not literal')
+    }
 }
 
 function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number, checks: { if: ts.IfStatement, kind: ParsedKind, literal?: any }[] = []) {

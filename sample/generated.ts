@@ -60,6 +60,13 @@ export function parseM(v: any): M {
     return <M>v;
 }
 
+export function parseI(v: any): bigint {
+    if (typeof v === "bigint") { }
+    else
+        throw new TypeError("v is not BigInt.");
+    return <bigint>v;
+}
+
 export function parseNA(v: any): number[] {
     if (Array.isArray(v))
         for (let i = 0; i < v.length; i++)
@@ -271,6 +278,21 @@ export function parseL(v: any): "abc" | 1 | true {
     else
         throw new TypeError("v is not true | abc | 1.");
     return <"abc" | 1 | true>v;
+}
+
+export function parseIL(v: any): 123n {
+    if (v === 123n) { }
+    else
+        throw new TypeError("v is not 123n.");
+    return <123n>v;
+}
+
+export function parseIL2(v: any): 123n | 456n {
+    if (v === 123n) { }
+    else if (v === 456n) { }
+    else
+        throw new TypeError("v is not 123n | 456n.");
+    return <123n | 456n>v;
 }
 
 function __check_1(v: any, r: string) {
