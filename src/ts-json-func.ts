@@ -65,6 +65,13 @@ export function generate(params: GenerationParams): GenerationResult {
     const tsJsonConfigSource = program.getSourceFile(params.configFile)
     if (!tsJsonConfigSource) throw new Error("tsJsonConfigSource is undefined.")
 
+    const booleanNode = tsJsonConfigSource.forEachChild(function visit(node): ts.Node | undefined {
+        if (node.kind === ts.SyntaxKind.BooleanKeyword)
+            return node
+        else 
+            return node.forEachChild(visit)
+    })
+
     for (const diag of services.getCompilerOptionsDiagnostics()) {
         console.log(diag)
     }
@@ -100,6 +107,10 @@ export function generate(params: GenerationParams): GenerationResult {
     outputTexts.push(printNode(typeErrorClass))
 
     const parsedInfos: ParsedInfo[] = []
+    if (booleanNode) {
+        parseNodeType(typeChecker, parsedInfos, booleanNode, typeChecker.getTypeAtLocation(booleanNode))
+    }
+
     for (const gen of genInfos) {
         const func = generateFunction(typeChecker, gen, parsedInfos)
         outputTexts.push(printNode(func))
@@ -301,6 +312,16 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
                     const idx = parsed.types.findIndex(p => p.kind === ParsedKind.Complex)
                     if (idx >= 0) parsed.types.splice(idx, 0, cp)
                     else parsed.types.push(cp)
+                } else if (cp.kind === ParsedKind.BooleanLiteral) {
+                    // true | false -> boolean
+                    const otherBoolIndex = parsed.types.findIndex(t => t.kind === ParsedKind.BooleanLiteral && t.literalValue !== cp.literalValue)
+                    if (otherBoolIndex >= 0) {
+                        const boolType = parseds.find(p => p.kind === ParsedKind.Boolean)
+                        if (!boolType) throw new Error('boolean type not found.')
+                        parsed.types[otherBoolIndex] = boolType
+                    } else {
+                        parsed.types.push(cp)
+                    }
                 } else {
                     parsed.types.push(cp)
                 }

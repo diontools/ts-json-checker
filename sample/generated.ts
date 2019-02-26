@@ -165,10 +165,9 @@ export function parseNSBUD(v: any): number | string | boolean | null | undefined
     else if (v === null) { }
     else if (typeof v === "string") { }
     else if (typeof v === "number") { }
-    else if (v === false) { }
-    else if (v === true) { }
+    else if (typeof v === "boolean") { }
     else
-        throw new TypeError("v is not Undefined | Null | String | Number | false | true.");
+        throw new TypeError("v is not Undefined | Null | String | Number | Boolean.");
     return <number | string | boolean | null | undefined>v;
 }
 
@@ -342,10 +341,9 @@ function __check_1(v: any, r: string) {
     else
         throw new TypeError(r + ".sd is not Undefined | String.");
     if (typeof v.bd === "undefined") { }
-    else if (v.bd === false) { }
-    else if (v.bd === true) { }
+    else if (typeof v.bd === "boolean") { }
     else
-        throw new TypeError(r + ".bd is not Undefined | false | true.");
+        throw new TypeError(r + ".bd is not Undefined | Boolean.");
     if (typeof v.ud === "undefined") { }
     else if (v.ud === null) { }
     else
