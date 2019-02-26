@@ -165,9 +165,10 @@ export function parseNSBUD(v: any): number | string | boolean | null | undefined
     else if (v === null) { }
     else if (typeof v === "string") { }
     else if (typeof v === "number") { }
-    else if (typeof v === "boolean") { }
+    else if (v === false) { }
+    else if (v === true) { }
     else
-        throw new TypeError("v is not Undefined | Null | String | Number | Boolean.");
+        throw new TypeError("v is not Undefined | Null | String | Number | false | true.");
     return <number | string | boolean | null | undefined>v;
 }
 
@@ -221,18 +222,56 @@ export function parseTL(v: any): {
 }
 
 export function parseSL(v: any): "abc" {
-    if (typeof v === "string") { }
+    if (v === "abc") { }
     else
-        throw new TypeError("v is not String.");
+        throw new TypeError("v is not abc.");
     return <"abc">v;
 }
 
 export function parseSL2(v: any): "abc" | "xyz" {
-    if (typeof v === "string") { }
-    else if (typeof v === "string") { }
+    if (v === "abc") { }
+    else if (v === "xyz") { }
     else
-        throw new TypeError("v is not String | String.");
+        throw new TypeError("v is not abc | xyz.");
     return <"abc" | "xyz">v;
+}
+
+export function parseNL(v: any): 1 {
+    if (v === 1) { }
+    else
+        throw new TypeError("v is not 1.");
+    return <1>v;
+}
+
+export function parseNL2(v: any): 1 | 2 {
+    if (v === 1) { }
+    else if (v === 2) { }
+    else
+        throw new TypeError("v is not 1 | 2.");
+    return <1 | 2>v;
+}
+
+export function parseBL(v: any): true {
+    if (v === true) { }
+    else
+        throw new TypeError("v is not true.");
+    return <true>v;
+}
+
+export function parseBL2(v: any): true | false {
+    if (typeof v === "boolean") { }
+    else
+        throw new TypeError("v is not Boolean.");
+    return <true | false>v;
+}
+
+export function parseL(v: any): "abc" | 1 | true {
+    if (v === true) { }
+    else if (v === "abc") { }
+    else if (v === 1) { }
+    else
+        throw new TypeError("v is not true | abc | 1.");
+    return <"abc" | 1 | true>v;
 }
 
 function __check_1(v: any, r: string) {
@@ -303,9 +342,10 @@ function __check_1(v: any, r: string) {
     else
         throw new TypeError(r + ".sd is not Undefined | String.");
     if (typeof v.bd === "undefined") { }
-    else if (typeof v.bd === "boolean") { }
+    else if (v.bd === false) { }
+    else if (v.bd === true) { }
     else
-        throw new TypeError(r + ".bd is not Undefined | Boolean.");
+        throw new TypeError(r + ".bd is not Undefined | false | true.");
     if (typeof v.ud === "undefined") { }
     else if (v.ud === null) { }
     else

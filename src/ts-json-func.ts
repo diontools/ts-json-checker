@@ -205,15 +205,27 @@ function getImports(node: ts.Node) {
 }
 
 function isBoolean(type: ts.Type) {
-    return (type.flags & (ts.TypeFlags.Boolean | ts.TypeFlags.BooleanLiteral)) !== 0
+    return (type.flags & ts.TypeFlags.Boolean) !== 0
+}
+
+function isBooleanLiteral(type: ts.Type) {
+    return (type.flags & ts.TypeFlags.BooleanLiteral) !== 0
 }
 
 function isNumber(type: ts.Type) {
-    return (type.flags & (ts.TypeFlags.Number | ts.TypeFlags.NumberLiteral)) !== 0
+    return (type.flags & ts.TypeFlags.Number) !== 0
+}
+
+function isNumberLiteral(type: ts.Type): type is ts.NumberLiteralType {
+    return (type.flags & ts.TypeFlags.NumberLiteral) !== 0
 }
 
 function isString(type: ts.Type) {
-    return (type.flags & (ts.TypeFlags.String | ts.TypeFlags.StringLiteral)) !== 0
+    return (type.flags & ts.TypeFlags.String) !== 0
+}
+
+function isStringLiteral(type: ts.Type): type is ts.StringLiteralType {
+    return (type.flags & ts.TypeFlags.StringLiteral) !== 0
 }
 
 function isNull(type: ts.Type) {
@@ -250,16 +262,26 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
         types: [],
         members: [],
         complexNumber: -1,
+        literalValue: undefined
     }
     parseds.push(parsed)
     console.log(FgWhite + 'parse ' + typeName + Reset)
 
     if (isBoolean(type)) {
         parsed.kind = ParsedKind.Boolean
+    } else if (isBooleanLiteral(type)) {
+        parsed.kind = ParsedKind.BooleanLiteral
+        parsed.literalValue = typeChecker.typeToTypeNode(type)!.kind === ts.SyntaxKind.TrueKeyword
     } else if (isNumber(type)) {
         parsed.kind = ParsedKind.Number
+    } else if (isNumberLiteral(type)) {
+        parsed.kind = ParsedKind.NumberLiteral
+        parsed.literalValue = type.value
     } else if (isString(type)) {
         parsed.kind = ParsedKind.String
+    } else if (isStringLiteral(type)) {
+        parsed.kind = ParsedKind.StringLiteral
+        parsed.literalValue = type.value
     } else if (isNull(type)) {
         parsed.kind = ParsedKind.Null
     } else if (isUndefined(type)) {
@@ -311,6 +333,9 @@ enum ParsedKind {
     Undefined,
     Null,
     Any,
+    NumberLiteral,
+    StringLiteral,
+    BooleanLiteral,
 
     Array,
     Union,
@@ -330,6 +355,7 @@ interface ParsedInfo {
     types: ParsedInfo[]
     members: MemberInfo[]
     complexNumber: number
+    literalValue?: string | boolean | number
 }
 
 function parseComplexType(parsed: ParsedInfo, parseds: ParsedInfo[], typeName: string, type: ts.Type, typeChecker: ts.TypeChecker, node: ts.Node) {
@@ -372,6 +398,17 @@ function getPrimitiveKindName(kind: ParsedKind) {
         case ParsedKind.Object: return 'object'
         case ParsedKind.Undefined: return 'undefined'
         default: throw new Error('non primitive')
+    }
+}
+
+function isLiteralKind(kind: ParsedKind) {
+    switch (kind) {
+        case ParsedKind.BooleanLiteral:
+        case ParsedKind.NumberLiteral:
+        case ParsedKind.StringLiteral:
+            return true
+        default:
+            return false
     }
 }
 
@@ -464,7 +501,18 @@ function generateComplexFunction(parsed: ParsedInfo) {
 function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number = 0) {
     const checks = createTypeChecks(parsed, value, name, arrayNest)
     if (checks.length > 0) {
-        const errorMessageExp = optimizeStringConcat(ts.createAdd(name, ts.createStringLiteral(' is not ' + checks.map(c => ParsedKind[c.kind]).join(' | ') + '.')))
+        const errorMessageExp = optimizeStringConcat(
+            ts.createAdd(
+                name,
+                ts.createStringLiteral(
+                    ' is not '
+                    + checks
+                        .map(c => isLiteralKind(c.kind) ? c.literal : ParsedKind[c.kind])
+                        .join(' | ')
+                    + '.'
+                )
+            )
+        )
 
         let st = checks[checks.length - 1]
         st.if.elseStatement = ts.createThrow(ts.createNew(typeErrorClassName, undefined, [errorMessageExp]))
@@ -480,7 +528,7 @@ function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name
     return undefined
 }
 
-function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number, checks: { if: ts.IfStatement, kind: ParsedKind }[] = []) {
+function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number, checks: { if: ts.IfStatement, kind: ParsedKind, literal?: any }[] = []) {
     if (parsed.kind === ParsedKind.Object) {
         checks.push({
             if: ts.createIf(
@@ -505,6 +553,15 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
                 ts.createBlock([])
             ),
             kind: parsed.kind,
+        })
+    } else if (isLiteralKind(parsed.kind)) {
+        checks.push({
+            if: ts.createIf(
+                ts.createStrictEquality(value, ts.createLiteral(parsed.literalValue!)),
+                ts.createBlock([])
+            ),
+            kind: parsed.kind,
+            literal: parsed.literalValue,
         })
     } else if (parsed.kind === ParsedKind.Array) {
         if (!parsed.elementType) throw new Error('elementType is undefined')
