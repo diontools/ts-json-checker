@@ -522,7 +522,7 @@ function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, pars
 
 function generateComplexFunction(parsed: ParsedInfo) {
     const funcName = '__check_' + parsed.complexNumber
-    info(Bright + FgWhite + 'generate', FgCyan + funcName + Reset)
+    info(Bright + FgWhite + 'generate', FgCyan + funcName, FgWhite + 'for', FgCyan + parsed.name + Reset)
 
     const vParamName = ts.createIdentifier('v')
     const vParam = ts.createParameter(undefined, undefined, undefined, vParamName, undefined, ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword))
