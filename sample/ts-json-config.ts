@@ -24,6 +24,7 @@ generate<M[]>("parseMA")
 generate<number[][]>("parseNAA")
 
 generate<number | string | boolean | null | undefined>("parseNSBUD")
+generate<null | number[] | X | undefined>("parseUNAXD")
 generate<M | null>("parseMU")
 generate<X | undefined>("parseXD")
 generate<(number[] | X)[] | X>("parseXAX")

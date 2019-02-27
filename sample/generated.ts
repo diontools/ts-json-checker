@@ -178,6 +178,21 @@ export function parseNSBUD(v: any): number | string | boolean | null | undefined
     return <number | string | boolean | null | undefined>v;
 }
 
+export function parseUNAXD(v: any): null | number[] | X | undefined {
+    if (typeof v === "undefined") { }
+    else if (v === null) { }
+    else if (Array.isArray(v))
+        for (let i = 0; i < v.length; i++)
+            if (typeof v[i] === "number") { }
+            else
+                throw new TypeError("v[" + i + "] is not Number.");
+    else if (v !== null && typeof v === "object")
+        __check_2(v, "v");
+    else
+        throw new TypeError("v is not Undefined | Null | Array | Object.");
+    return <null | number[] | X | undefined>v;
+}
+
 export function parseMU(v: any): M | null {
     if (v === null) { }
     else if (v !== null && typeof v === "object")
