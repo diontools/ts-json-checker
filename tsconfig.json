@@ -9,7 +9,7 @@
         "sourceMap": true,
         "baseUrl": ".",
         "paths": {
-            "ts-json": ["./src/ts-json"]
+            "ts-json-checker": ["./src/index"]
         }
     }
 }

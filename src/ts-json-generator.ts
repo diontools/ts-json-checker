@@ -15,7 +15,7 @@ const baseDir = process.cwd()
 const configFile = process.argv.length >= 3 ? process.argv[2] : 'ts-json-config.ts'
 console.log(Bright + FgWhite + 'config:', FgGreen + configFile + Reset)
 
-const tsJsonFile = path.relative(baseDir, path.join(__dirname, 'ts-json.ts'))
+const tsJsonFile = path.relative(baseDir, path.join(__dirname, 'index.ts'))
 console.log(Bright + FgWhite + 'tsJson:', FgGreen + tsJsonFile + Reset)
 
 const result = generate({

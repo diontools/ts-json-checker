@@ -1,6 +1,8 @@
 import * as ts from 'typescript'
 import { FgWhite, Reset, Bright, FgYellow, FgCyan, FgGreen, FgMagenta } from './colors';
 
+const TSJsonCheckerName = 'ts-json-checker'
+
 interface GenerationInfo {
     typeNode: ts.TypeNode
     name: string
@@ -27,7 +29,7 @@ export function generate(params: GenerationParams): GenerationResult {
         strict: true,
         baseUrl: '.',
         paths: {
-            'ts-json': ['./src/ts-json']
+            [TSJsonCheckerName]: [params.tsJsonFile]
         }
     }
 
@@ -208,7 +210,7 @@ function getImports(node: ts.Node) {
     node.forEachChild(node => {
         if (ts.isImportDeclaration(node)
             && ts.isStringLiteral(node.moduleSpecifier)
-            && node.moduleSpecifier.text !== "ts-json") {
+            && node.moduleSpecifier.text !== TSJsonCheckerName) {
             imports.push(node)
         }
     })
