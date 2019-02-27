@@ -6,7 +6,7 @@ It is mainly used for JSON input check.
 
 ## Environment
 
-* NodeJS 8
+* Node.js 10
 * TypeScript 3.3.3333
 
 ## Install
