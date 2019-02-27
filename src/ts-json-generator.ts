@@ -14,7 +14,7 @@ const configFile = process.argv.length >= 3 ? process.argv[2] : 'ts-json-config.
 const configDir = path.dirname(configFile)
 info(Bright + FgWhite + 'config:', FgGreen + configFile + Reset)
 
-const tsJsonFile = path.relative(baseDir, path.join(__dirname, 'index.ts'))
+const tsJsonFile = path.relative(baseDir, path.join(__dirname, '../src/index.ts'))
 info(Bright + FgWhite + 'tsJson:', FgGreen + tsJsonFile + Reset)
 
 const result = generate({
@@ -35,7 +35,8 @@ const result = generate({
     fixImportPath: (outputFileName, importPath) => {
         const outputDir = path.dirname(path.join(configDir, outputFileName))
         const relativeDir = path.relative(outputDir, configDir)
-        return path.join(relativeDir, importPath).replace('\\', '/')
+        const p = path.join(relativeDir, importPath).replace('\\', '/')
+        return p.startsWith('.') ? p : './' + p
     },
     eol: "\r\n"
 })

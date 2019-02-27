@@ -1,12 +1,13 @@
 {
-  "name": "tsjsontypechecker",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "ts-json-checker",
+  "version": "0.0.6",
+  "description": "Type checking function generator for TypeScript",
+  "main": "src/index.ts",
   "scripts": {
     "gen": "ts-node ./src/ts-json-generator.ts ./sample/ts-json-config.ts",
     "watch": "nodemon",
     "test": "jest",
+    "build": "tsc",
     "start": "parcel ./docs-src/index.html --out-dir ./docs",
     "build:docs": "parcel build ./docs-src/index.html --out-dir ./docs --public-url ./ --no-source-maps"
   },
@@ -14,8 +15,8 @@
     "type": "git",
     "url": "git+https://github.com/diontools/TSJsonTypeChecker.git"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "diontools",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/diontools/TSJsonTypeChecker/issues"
   },
@@ -31,5 +32,9 @@
     "parcel-bundler": "^1.11.0",
     "ts-jest": "^24.0.0",
     "ts-node": "^8.0.2"
-  }
+  },
+  "files": [
+    "src",
+    "dist"
+  ]
 }

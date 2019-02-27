@@ -1,22 +1,21 @@
 # ts-json-checker
 
-ts-json-checkerは、型アサーションから型チェック関数を生成するTypeScriptコードです。
+**ts-json-checker** is type checking function generator from type assertion for TypeScript.
 
-主にJSONの入力チェックに使用します。
+It is mainly used for JSON input check.
 
-## 動作環境
+## Environment
 
 * NodeJS 8
 * TypeScript 3.3.3333
-* ts-node 8
 
-## インストール
+## Install
 
-```
+```shell
 npm install --save-dev ts-json-checker
 ```
 
-## 設定
+## Configure
 
 ts-json-config.ts
 
@@ -36,18 +35,29 @@ generate<number | string | boolean | null | undefined>("parseNSBUD")
 generate<X | undefined>("parseXD")
 ```
 
-## 使い方
+types.ts
 
-```
-ts-node ./node_modules/ts-json-checker/ts-json-generator.ts ./ts-json-config.ts
+```typescript
+export interface X {
+    abc: string
+    x?: X
+}
 ```
 
-## 出力
+## Usage
+
+```shell
+node ./node_modules/ts-json-checker/dist/ts-json-generator.js
+# or specific config file
+node ./node_modules/ts-json-checker/dist/ts-json-generator.js ./ts-json-config.ts
+```
+
+## Output
 
 generated.ts
 
 ```typescript
-import { X } from './types'
+import { X } from "./types";
 
 export class TypeError implements Error {
     public name = "TypeError";
@@ -117,22 +127,14 @@ export function parseXD(v: any): X | undefined {
 }
 
 function __check_1(v: any, r: string) {
-    if (typeof v.n2 === "number") { }
+    if (typeof v.abc === "string") { }
     else
-        throw new TypeError(r + ".n2 is not Number.");
-    if (typeof v.xd === "undefined") { }
-    else if (v.xd !== null && typeof v.xd === "object")
-        __check_1(v.xd, r + ".xd");
+        throw new TypeError(r + ".abc is not String.");
+    if (typeof v.x === "undefined") { }
+    else if (v.x !== null && typeof v.x === "object")
+        __check_1(v.x, r + ".x");
     else
-        throw new TypeError(r + ".xd is not Undefined | Object.");
-    if (Array.isArray(v.xa))
-        for (let i = 0; i < v.xa.length; i++)
-            if (v.xa[i] !== null && typeof v.xa[i] === "object")
-                __check_1(v.xa[i], r + ".xa[" + i + "]");
-            else
-                throw new TypeError(r + ".xa[" + i + "] is not Object.");
-    else
-        throw new TypeError(r + ".xa is not Array.");
+        throw new TypeError(r + ".x is not Undefined | Object.");
 }
 ```
 
