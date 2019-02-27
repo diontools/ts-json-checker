@@ -1,3 +1,5 @@
+[![npm version](https://badge.fury.io/js/ts-json-checker.svg)](https://badge.fury.io/js/ts-json-checker)
+
 # ts-json-checker
 
 **ts-json-checker** is type checking function generator from type assertion for TypeScript.
