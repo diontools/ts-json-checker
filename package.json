@@ -1,6 +1,6 @@
 {
   "name": "ts-json-checker",
-  "version": "0.0.6",
+  "version": "0.0.9",
   "description": "Type checking function generator for TypeScript",
   "main": "src/index.ts",
   "scripts": {
@@ -11,6 +11,7 @@
     "start": "parcel ./docs-src/index.html --out-dir ./docs",
     "build:docs": "parcel build ./docs-src/index.html --out-dir ./docs --public-url ./ --no-source-maps"
   },
+  "bin": "bin/ts-json-generator",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/diontools/TSJsonTypeChecker.git"

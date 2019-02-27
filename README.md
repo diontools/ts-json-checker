@@ -50,6 +50,10 @@ export interface X {
 node ./node_modules/ts-json-checker/dist/ts-json-generator.js
 # or specific config file
 node ./node_modules/ts-json-checker/dist/ts-json-generator.js ./ts-json-config.ts
+
+# using npx
+npx ts-json-checker
+npx ts-json-checker ./ts-json-config.ts
 ```
 
 ## Output
