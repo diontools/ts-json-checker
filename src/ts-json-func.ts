@@ -13,6 +13,7 @@ export interface GenerationParams {
     configFile: string
     resolve: (fileName: string) => string | undefined
     defaultLibFileName?: string
+    fixImportPath: (outputFileName: string, importPath: string) => string
     eol: "\r\n" | "\n"
 }
 
@@ -124,9 +125,6 @@ export function generate(params: GenerationParams): GenerationResult {
         outputTexts.push(printNode(func))
     }
 
-    const imports = getImports(tsJsonConfigSource);
-    outputTexts.unshift(...imports.map(d => d.getText()))
-
     const variables = getConstVariables(tsJsonConfigSource);
 
     const fileNameVariable = variables.find(v => (<ts.Identifier>v.name).text === 'fileName')
@@ -134,6 +132,19 @@ export function generate(params: GenerationParams): GenerationResult {
     if (!fileNameVariable.initializer) throw new Error('fileName variable initializer is undefined.')
     if (!ts.isStringLiteral(fileNameVariable.initializer)) throw new Error('fileName variable initializer is not string literal.')
     const fileName = fileNameVariable.initializer.text
+
+    const imports = getImports(tsJsonConfigSource)
+    for (let i = 0; i < imports.length; i++) {
+        const imp = imports[i]
+        if (ts.isStringLiteral(imp.moduleSpecifier)) {
+            if (imp.moduleSpecifier.text.startsWith('.')) {
+                const p = params.fixImportPath(fileName, imp.moduleSpecifier.text)
+                const s = ts.createStringLiteral(p)
+                imports[i] = ts.createImportDeclaration(imp.decorators, imp.modifiers, imp.importClause, s)
+            }
+        }
+    }
+    outputTexts.unshift(...imports.map(d => printNode(d)))
 
     return {
         fileName: fileName,

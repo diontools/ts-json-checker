@@ -1,7 +1,7 @@
 import { generate } from 'ts-json-checker'
 import { T as M, X } from './types'
 
-const fileName = './generated.ts'
+const fileName = './outputs/generated.ts'
 
 generate<number>("parseN")
 generate<string>("parseS")

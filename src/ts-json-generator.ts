@@ -13,6 +13,7 @@ console.log(FgWhite + 'initialize...' + Reset)
 const baseDir = process.cwd()
 
 const configFile = process.argv.length >= 3 ? process.argv[2] : 'ts-json-config.ts'
+const configDir = path.dirname(configFile)
 console.log(Bright + FgWhite + 'config:', FgGreen + configFile + Reset)
 
 const tsJsonFile = path.relative(baseDir, path.join(__dirname, 'index.ts'))
@@ -33,9 +34,14 @@ const result = generate({
         console.log(Bright + FgRed + 'not resolved', fileName + Reset)
     },
     defaultLibFileName: "libs/lib.d.ts",
+    fixImportPath: (outputFileName, importPath) => {
+        const outputDir = path.dirname(path.join(configDir, outputFileName))
+        const relativeDir = path.relative(outputDir, configDir)
+        return path.join(relativeDir, importPath).replace('\\', '/')
+    },
     eol: "\r\n"
 })
 
-const outputFile = path.join(path.dirname(configFile), result.fileName)
+const outputFile = path.join(configDir, result.fileName)
 console.info(Bright + FgWhite + 'output:', FgGreen + outputFile + Reset)
 fs.writeFileSync(outputFile, result.code)

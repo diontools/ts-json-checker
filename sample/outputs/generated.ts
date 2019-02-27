@@ -1,4 +1,4 @@
-import { T as M, X } from './types'
+import { T as M, X } from "../types";
 
 export class TypeError implements Error {
     public name = "TypeError";
