@@ -1,23 +1,21 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { FgWhite, Reset, Bright, FgYellow, FgCyan, FgGreen, FgMagenta, FgRed } from './colors';
+import { debug, info, logOption } from './logger'
 import { generate } from './ts-json-func'
 
-const DEBUG = true
-if (!DEBUG) {
-    console.log = function () { }
-}
+logOption.isDebug = false
 
-console.log(FgWhite + 'initialize...' + Reset)
+debug(FgWhite + 'initialize...' + Reset)
 
 const baseDir = process.cwd()
 
 const configFile = process.argv.length >= 3 ? process.argv[2] : 'ts-json-config.ts'
 const configDir = path.dirname(configFile)
-console.log(Bright + FgWhite + 'config:', FgGreen + configFile + Reset)
+info(Bright + FgWhite + 'config:', FgGreen + configFile + Reset)
 
 const tsJsonFile = path.relative(baseDir, path.join(__dirname, 'index.ts'))
-console.log(Bright + FgWhite + 'tsJson:', FgGreen + tsJsonFile + Reset)
+info(Bright + FgWhite + 'tsJson:', FgGreen + tsJsonFile + Reset)
 
 const result = generate({
     tsJsonFile,
@@ -31,7 +29,7 @@ const result = generate({
             return fs.readFileSync(fileName).toString()
         }
 
-        console.log(Bright + FgRed + 'not resolved', fileName + Reset)
+        info(Bright + FgRed + 'not resolved', fileName + Reset)
     },
     defaultLibFileName: "libs/lib.d.ts",
     fixImportPath: (outputFileName, importPath) => {
@@ -43,5 +41,5 @@ const result = generate({
 })
 
 const outputFile = path.join(configDir, result.fileName)
-console.info(Bright + FgWhite + 'output:', FgGreen + outputFile + Reset)
+info(Bright + FgWhite + 'output:', FgGreen + outputFile + Reset)
 fs.writeFileSync(outputFile, result.code)

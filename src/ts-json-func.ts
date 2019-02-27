@@ -1,5 +1,6 @@
 import * as ts from 'typescript'
 import { FgWhite, Reset, Bright, FgYellow, FgCyan, FgGreen, FgMagenta } from './colors';
+import { debug, info } from './logger'
 
 const TSJsonCheckerName = 'ts-json-checker'
 
@@ -76,7 +77,7 @@ export function generate(params: GenerationParams): GenerationResult {
     })
 
     for (const diag of services.getCompilerOptionsDiagnostics()) {
-        console.log(diag)
+        debug(diag)
     }
 
     const printer = ts.createPrinter({
@@ -85,25 +86,25 @@ export function generate(params: GenerationParams): GenerationResult {
 
     function printNode(node: ts.Node) {
         const text = printer.printNode(ts.EmitHint.Unspecified, node, tsJsonConfigSource!)
-        console.log(text)
+        debug(text)
         return text
     }
 
-    console.log(FgWhite + 'generate function finding...' + Reset)
+    debug(FgWhite + 'generate function finding...' + Reset)
 
     const generateFunc = getGenerateFunction(tsJsonSource)
     if (!generateFunc) throw new Error("generate function is undefined.")
 
-    console.log(FgWhite + tsJsonSource.fileName, generateFunc.name!.getStart(), generateFunc.getText() + Reset)
+    debug(FgWhite + tsJsonSource.fileName, generateFunc.name!.getStart(), generateFunc.getText() + Reset)
 
-    console.log(FgWhite + 'references finding...' + Reset)
+    debug(FgWhite + 'references finding...' + Reset)
 
     const refs = services.getReferencesAtPosition(tsJsonSource.fileName, generateFunc.name!.getStart())
     if (!refs) throw new Error("refs is undefined.")
 
     const genInfos = getGenerationInfos(refs, program);
     if (genInfos.length === 0) {
-        console.log(Bright + FgYellow + "generate function not found." + Reset)
+        debug(Bright + FgYellow + "generate function not found." + Reset)
     }
 
     const outputTexts: string[] = []
@@ -159,7 +160,7 @@ function getGenerationInfos(refs: ts.ReferenceEntry[], program: ts.Program) {
 
     for (const ref of refs) {
         if (!ref.isDefinition) {
-            console.log(FgWhite + ref.fileName, ref.textSpan.start + Reset)
+            debug(FgWhite + ref.fileName, ref.textSpan.start + Reset)
 
             const targetFile = program.getSourceFile(ref.fileName)
             if (!targetFile) throw new Error("targetFile is undefined.")
@@ -167,7 +168,7 @@ function getGenerationInfos(refs: ts.ReferenceEntry[], program: ts.Program) {
             const targetFunc = getReferencedCallExpression(targetFile, ref)
             if (!targetFunc) throw new Error("target function is undefined.")
 
-            console.log(FgWhite + targetFunc.getText() + Reset)
+            debug(FgWhite + targetFunc.getText() + Reset)
 
             const typeNode = targetFunc.typeArguments![0]
             const arg0 = targetFunc.arguments[0]
@@ -297,7 +298,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
         literalValue: undefined
     }
     parseds.push(parsed)
-    console.log(FgWhite + 'parse ' + typeName + Reset)
+    debug(FgWhite + 'parse ' + typeName + Reset)
 
     if (isBoolean(type)) {
         parsed.kind = ParsedKind.Boolean
@@ -330,7 +331,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
     } else if (type.isUnion()) {
         parsed.kind = ParsedKind.Union
         for (const t of type.types) {
-            //console.log(typeChecker.typeToString(t))
+            //debug(typeChecker.typeToString(t))
             const cp = parseNodeType(typeChecker, parseds, node, t)
             if (cp.kind !== ParsedKind.Boolean || !parsed.types.some(t => t.kind === ParsedKind.Boolean)) {
                 if (cp.kind === ParsedKind.Array) {
@@ -359,12 +360,12 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
         const eType = getElementTypeOfArrayType(typeChecker, type)
         if (eType) {
             parsed.kind = ParsedKind.Array
-            console.log(FgWhite + 'array of', typeChecker.typeToString(eType) + Reset)
+            debug(FgWhite + 'array of', typeChecker.typeToString(eType) + Reset)
             parsed.elementType = parseNodeType(typeChecker, parseds, node, eType)
         } else if (ts.isTypeLiteralNode(node)) {
             parseComplexType(parsed, parseds, typeName, type, typeChecker, node)
         } else {
-            console.log(ts.TypeFlags[type.flags])
+            debug(ts.TypeFlags[type.flags])
             throw new Error("unknown type: " + typeName)
         }
     }
@@ -410,12 +411,12 @@ interface ParsedInfo {
 function parseComplexType(parsed: ParsedInfo, parseds: ParsedInfo[], typeName: string, type: ts.Type, typeChecker: ts.TypeChecker, node: ts.Node) {
     parsed.kind = ParsedKind.Complex
     parsed.complexNumber = parseds.filter(p => p.kind === ParsedKind.Complex).length
-    console.info('complex type:', Bright + FgCyan + typeName + Reset)
+    info('complex type:', Bright + FgCyan + typeName + Reset)
 
     for (const prop of type.getProperties()) {
         const propType = typeChecker.getTypeOfSymbolAtLocation(prop, node)
         const propTypeName = typeChecker.typeToString(propType)
-        console.info(typeName + '.' + prop.name + ':', Bright + FgGreen + propTypeName + Reset)
+        info(typeName + '.' + prop.name + ':', Bright + FgGreen + propTypeName + Reset)
 
         const cp = parseNodeType(typeChecker, parseds, prop.valueDeclaration, propType)
         parsed.members.push({ name: prop.name, type: cp })
@@ -423,7 +424,7 @@ function parseComplexType(parsed: ParsedInfo, parseds: ParsedInfo[], typeName: s
 }
 
 function printParsed(p: ParsedInfo) {
-    console.log(p.name, ParsedKind[p.kind], p.elementType && p.elementType.name, p.types.map(t => t.name), p.members.map(m => [m.name, m.type.name]))
+    debug(p.name, ParsedKind[p.kind], p.elementType && p.elementType.name, p.types.map(t => t.name), p.members.map(m => [m.name, m.type.name]))
 }
 
 function isPrimitiveKind(kind: ParsedKind) {
@@ -493,7 +494,7 @@ const typeErrorClass = ts.createClassDeclaration(
 
 function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, parsedInfos: ParsedInfo[]) {
     const type = typeChecker.getTypeAtLocation(gen.typeNode)
-    console.info('generate', Bright + FgMagenta + gen.name + Reset + '<' + Bright + FgYellow + typeChecker.typeToString(type) + Reset + '>')
+    info('generate', Bright + FgMagenta + gen.name + Reset + '<' + Bright + FgYellow + typeChecker.typeToString(type) + Reset + '>')
     const parsed = parseNodeType(typeChecker, parsedInfos, gen.typeNode, type)
 
     const vParamName = ts.createIdentifier('v')
@@ -521,7 +522,7 @@ function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, pars
 
 function generateComplexFunction(parsed: ParsedInfo) {
     const funcName = '__check_' + parsed.complexNumber
-    console.info(Bright + FgWhite + 'generate', FgCyan + funcName + Reset)
+    info(Bright + FgWhite + 'generate', FgCyan + funcName + Reset)
 
     const vParamName = ts.createIdentifier('v')
     const vParam = ts.createParameter(undefined, undefined, undefined, vParamName, undefined, ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword))
