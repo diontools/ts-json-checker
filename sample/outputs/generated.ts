@@ -480,4 +480,9 @@ function __check_6(v: any, r: string) {
         throw new TypeError(r + ".n is not Number.");
 }
 
-function __convert_1(v: any): Date { return new Date(v); }
+function __convert_1(v: any): Date {
+    const dt = Date.parse(v);
+    if (isNaN(dt))
+        throw new TypeError('Unable to convert to date. value: ' + v);
+    return new Date(dt);
+}

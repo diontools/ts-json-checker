@@ -3,7 +3,11 @@ import { T as M, X } from './types'
 
 const fileName = './outputs/generated.ts'
 
-convert<Date>(v => new Date(v))
+convert<Date>(v => {
+    const dt = Date.parse(v)
+    if (isNaN(dt)) throw new TypeError('Unable to convert to date. value: ' + v)
+    return new Date(dt)
+})
 
 generate<number>("parseN")
 generate<string>("parseS")
