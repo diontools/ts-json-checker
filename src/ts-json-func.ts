@@ -521,7 +521,7 @@ function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, pars
 }
 
 function generateComplexFunction(parsed: ParsedInfo) {
-    const funcName = '__check_' + parsed.complexNumber
+    const funcName = getCheckComplexFunctionName(parsed)
     info(Bright + FgWhite + 'generate', FgCyan + funcName, FgWhite + 'for', FgCyan + parsed.name + Reset)
 
     const vParamName = ts.createIdentifier('v')
@@ -551,32 +551,36 @@ function generateComplexFunction(parsed: ParsedInfo) {
     return func
 }
 
+function getCheckComplexFunctionName(parsed: ParsedInfo) {
+    return '__check_' + parsed.complexNumber
+}
+
 function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number = 0) {
-    const checks = createTypeChecks(parsed, value, name, arrayNest)
-    if (checks.length > 0) {
-        const errorMessageExp = optimizeStringConcat(
-            ts.createAdd(
-                name,
-                ts.createStringLiteral(
-                    ' is not '
-                    + checks
-                        .map(c => isLiteralKind(c.kind) ? getLiteralString(c.kind, c.literal) : ParsedKind[c.kind])
-                        .join(' | ')
-                    + '.'
+        const checks = createTypeChecks(parsed, value, name, arrayNest)
+        if (checks.length > 0) {
+            const errorMessageExp = optimizeStringConcat(
+                ts.createAdd(
+                    name,
+                    ts.createStringLiteral(
+                        ' is not '
+                        + checks
+                            .map(c => isLiteralKind(c.kind) ? getLiteralString(c.kind, c.literal) : ParsedKind[c.kind])
+                            .join(' | ')
+                        + '.'
+                    )
                 )
             )
-        )
 
-        let st = checks[checks.length - 1]
-        st.if.elseStatement = ts.createThrow(ts.createNew(typeErrorClassName, undefined, [errorMessageExp]))
+            let st = checks[checks.length - 1]
+            st.if.elseStatement = ts.createThrow(ts.createNew(typeErrorClassName, undefined, [errorMessageExp]))
 
-        for (let i = checks.length - 2; i >= 0; i--) {
-            checks[i].if.elseStatement = st.if
-            st = checks[i]
+            for (let i = checks.length - 2; i >= 0; i--) {
+                checks[i].if.elseStatement = st.if
+                st = checks[i]
+            }
+
+            return st.if
         }
-
-        return st.if
-    }
 
     return undefined
 }
@@ -655,7 +659,7 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
             if: ts.createIf(
                 // value !== null && typeof value === "object"
                 ts.createLogicalAnd(ts.createStrictInequality(value, ts.createNull()), ts.createStrictEquality(ts.createTypeOf(value), ts.createStringLiteral('object'))),
-                ts.createStatement(ts.createCall(ts.createIdentifier('__check_' + parsed.complexNumber), undefined, [
+                ts.createStatement(ts.createCall(ts.createIdentifier(getCheckComplexFunctionName(parsed)), undefined, [
                     value,
                     optimizeStringConcat(name)
                 ]))
