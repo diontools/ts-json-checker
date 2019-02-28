@@ -67,6 +67,11 @@ export function parseI(v: any): bigint {
     return <bigint>v;
 }
 
+export function parseDate(v: any): Date {
+    v = __convert_1(v);
+    return <Date>v;
+}
+
 export function parseNA(v: any): number[] {
     if (Array.isArray(v))
         for (let i = 0; i < v.length; i++)
@@ -428,6 +433,7 @@ function __check_1(v: any, r: string) {
         __check_3(v.tl, r + ".tl");
     else
         throw new TypeError(r + ".tl is not Object.");
+    v.date = __convert_1(v.date);
 }
 
 function __check_2(v: any, r: string) {
@@ -473,3 +479,5 @@ function __check_6(v: any, r: string) {
     else
         throw new TypeError(r + ".n is not Number.");
 }
+
+function __convert_1(v: any): Date { return new Date(v); }

@@ -9,6 +9,14 @@ interface GenerationInfo {
     name: string
 }
 
+interface ConvertInfo {
+    typeNode: ts.TypeNode
+    func: ts.ArrowFunction
+    resultType: ts.Type
+    name: string
+    number: number
+}
+
 export interface GenerationParams {
     tsJsonFile: string
     configFile: string
@@ -97,14 +105,21 @@ export function generate(params: GenerationParams): GenerationResult {
 
     debug(FgWhite + tsJsonSource.fileName, generateFunc.name!.getStart(), generateFunc.getText() + Reset)
 
+    const convertFunc = getConvertFunction(tsJsonSource)
+    if (!convertFunc) throw new Error('convert function is undefined.')
+
+    debug(FgWhite + tsJsonSource.fileName, convertFunc.name!.getStart(), convertFunc.getText() + Reset)
+
     debug(FgWhite + 'references finding...' + Reset)
 
-    const refs = services.getReferencesAtPosition(tsJsonSource.fileName, generateFunc.name!.getStart())
-    if (!refs) throw new Error("refs is undefined.")
-
-    const genInfos = getGenerationInfos(refs, program);
+    const genInfos = getGenerationInfos(services, tsJsonSource, generateFunc, program);
     if (genInfos.length === 0) {
         debug(Bright + FgYellow + "generate function not found." + Reset)
+    }
+
+    const convInfos = getConvertInfos(services, tsJsonSource, convertFunc, program, typeChecker)
+    if (convInfos.length === 0) {
+        debug(Bright + FgYellow + "convert function not found." + Reset)
     }
 
     const outputTexts: string[] = []
@@ -112,17 +127,22 @@ export function generate(params: GenerationParams): GenerationResult {
 
     const parsedInfos: ParsedInfo[] = []
     if (booleanNode) {
-        parseNodeType(typeChecker, parsedInfos, booleanNode, typeChecker.getTypeAtLocation(booleanNode))
+        parseNodeType(typeChecker, parsedInfos, convInfos, booleanNode, typeChecker.getTypeAtLocation(booleanNode))
     }
 
     for (const gen of genInfos) {
-        const func = generateFunction(typeChecker, gen, parsedInfos)
+        const func = generateFunction(typeChecker, gen, parsedInfos, convInfos)
         outputTexts.push(printNode(func))
     }
 
     const complexTypes = parsedInfos.filter(p => p.kind === ParsedKind.Complex)
     for (const p of complexTypes) {
         const func = generateComplexFunction(p)
+        outputTexts.push(printNode(func))
+    }
+
+    for (const conv of convInfos) {
+        const func = generateConvertFunction(conv)
         outputTexts.push(printNode(func))
     }
 
@@ -155,8 +175,48 @@ export function generate(params: GenerationParams): GenerationResult {
 
 
 
-function getGenerationInfos(refs: ts.ReferenceEntry[], program: ts.Program) {
-    const genInfos: GenerationInfo[] = []
+function getGenerationInfos(services: ts.LanguageService, tsJsonSource: ts.SourceFile, generateFunc: ts.FunctionDeclaration, program: ts.Program): GenerationInfo[] {
+    const generateFuncRefs = services.getReferencesAtPosition(tsJsonSource.fileName, generateFunc.name!.getStart())
+    if (!generateFuncRefs) throw new Error("generateFuncRefs is undefined.")
+
+    const callers = getReferencedCallers(generateFuncRefs, program)
+    return callers.map(targetFunc => {
+        const typeNode = targetFunc.typeArguments![0]
+        const arg0 = targetFunc.arguments[0]
+        if (!ts.isStringLiteral(arg0)) throw new Error("arg0 is not string literal.")
+
+        return {
+            typeNode: typeNode,
+            name: arg0.text,
+        }
+    })
+}
+
+function getConvertInfos(services: ts.LanguageService, tsJsonSource: ts.SourceFile, convertFunc: ts.FunctionDeclaration, program: ts.Program, typeChecker: ts.TypeChecker): ConvertInfo[] {
+    const convertFuncRefs = services.getReferencesAtPosition(tsJsonSource.fileName, convertFunc.name!.getStart())
+    if (!convertFuncRefs) throw new Error('convertFuncRefs is undefined.')
+
+    const callers = getReferencedCallers(convertFuncRefs, program)
+    return callers.map((targetFunc, index) => {
+        const typeNode = targetFunc.typeArguments![0]
+        const arg0 = targetFunc.arguments[0]
+        if (!ts.isArrowFunction(arg0)) throw new Error("arg0 is not arrow function.")
+
+        const type = typeChecker.getTypeAtLocation(typeNode)
+        const typeName = typeChecker.typeToString(type)
+
+        return {
+            typeNode: typeNode,
+            func: arg0,
+            resultType: type,
+            name: typeName,
+            number: index + 1,
+        }
+    })
+}
+
+function getReferencedCallers(refs: ts.ReferenceEntry[], program: ts.Program) {
+    const callers: ts.CallExpression[] = []
 
     for (const ref of refs) {
         if (!ref.isDefinition) {
@@ -170,18 +230,11 @@ function getGenerationInfos(refs: ts.ReferenceEntry[], program: ts.Program) {
 
             debug(FgWhite + targetFunc.getText() + Reset)
 
-            const typeNode = targetFunc.typeArguments![0]
-            const arg0 = targetFunc.arguments[0]
-            if (!ts.isStringLiteral(arg0)) throw new Error("arg0 is not string literal.")
-
-            genInfos.push({
-                typeNode: typeNode,
-                name: arg0.text,
-            })
+            callers.push(targetFunc)
         }
     }
 
-    return genInfos
+    return callers
 }
 
 function getReferencedCallExpression(node: ts.Node, ref: ts.ReferenceEntry) {
@@ -196,6 +249,14 @@ function getReferencedCallExpression(node: ts.Node, ref: ts.ReferenceEntry) {
 function getGenerateFunction(node: ts.Node) {
     return node.forEachChild(node => {
         if (ts.isFunctionDeclaration(node) && node.name && node.name.text === "generate") {
+            return node
+        }
+    })
+}
+
+function getConvertFunction(node: ts.Node) {
+    return node.forEachChild(node => {
+        if (ts.isFunctionDeclaration(node) && node.name && node.name.text === "convert") {
             return node
         }
     })
@@ -281,7 +342,7 @@ function getElementTypeOfArrayType(typeChecker: ts.TypeChecker, type: ts.Type): 
     return (typeChecker as any).getElementTypeOfArrayType(type)
 }
 
-function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node: ts.Node, type: ts.Type): ParsedInfo {
+function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], converts: ConvertInfo[], node: ts.Node, type: ts.Type): ParsedInfo {
     let parsed = parseds.find(p => p.keyType === type)
     if (parsed) {
         return parsed
@@ -300,7 +361,13 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
     parseds.push(parsed)
     debug(FgWhite + 'parse ' + typeName + Reset)
 
-    if (isBoolean(type)) {
+    const convert = converts.find(c => c.resultType === type)
+
+    if (convert) {
+        debug(FgWhite + 'convertion type' + Reset)
+        parsed.kind = ParsedKind.Convertion
+        parsed.convert = convert
+    } else if (isBoolean(type)) {
         parsed.kind = ParsedKind.Boolean
     } else if (isBooleanLiteral(type)) {
         parsed.kind = ParsedKind.BooleanLiteral
@@ -332,7 +399,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
         parsed.kind = ParsedKind.Union
         for (const t of type.types) {
             //debug(typeChecker.typeToString(t))
-            const cp = parseNodeType(typeChecker, parseds, node, t)
+            const cp = parseNodeType(typeChecker, parseds, converts, node, t)
             if (cp.kind !== ParsedKind.Boolean || !parsed.types.some(t => t.kind === ParsedKind.Boolean)) {
                 if (cp.kind === ParsedKind.Array) {
                     // array before complex
@@ -355,13 +422,13 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
             }
         }
     } else if (type.isClassOrInterface() || ts.isTypeLiteralNode(node)) {
-        parseComplexType(parsed, parseds, typeName, type, typeChecker, node)
+        parseComplexType(parsed, parseds, converts, typeName, type, typeChecker, node)
     } else {
         const eType = getElementTypeOfArrayType(typeChecker, type)
         if (eType) {
             parsed.kind = ParsedKind.Array
             debug(FgWhite + 'array of', typeChecker.typeToString(eType) + Reset)
-            parsed.elementType = parseNodeType(typeChecker, parseds, node, eType)
+            parsed.elementType = parseNodeType(typeChecker, parseds, converts, node, eType)
         } else {
             debug(ts.TypeFlags[type.flags])
             throw new Error("unknown type: " + typeName)
@@ -388,6 +455,8 @@ enum ParsedKind {
     Array,
     Union,
     Complex,
+
+    Convertion,
 }
 
 interface MemberInfo {
@@ -404,9 +473,10 @@ interface ParsedInfo {
     members: MemberInfo[]
     complexNumber: number
     literalValue?: string | boolean | number | ts.PseudoBigInt
+    convert?: ConvertInfo
 }
 
-function parseComplexType(parsed: ParsedInfo, parseds: ParsedInfo[], typeName: string, type: ts.Type, typeChecker: ts.TypeChecker, node: ts.Node) {
+function parseComplexType(parsed: ParsedInfo, parseds: ParsedInfo[], converts: ConvertInfo[], typeName: string, type: ts.Type, typeChecker: ts.TypeChecker, node: ts.Node) {
     parsed.kind = ParsedKind.Complex
     parsed.complexNumber = parseds.filter(p => p.kind === ParsedKind.Complex).length
     info('complex type:', Bright + FgCyan + typeName + Reset)
@@ -418,7 +488,7 @@ function parseComplexType(parsed: ParsedInfo, parseds: ParsedInfo[], typeName: s
 
         if (!ts.isPropertySignature(prop.valueDeclaration)) throw new Error('not property signature')
         if (!prop.valueDeclaration.type) throw new Error('type is undefined')
-        const cp = parseNodeType(typeChecker, parseds, prop.valueDeclaration.type, propType)
+        const cp = parseNodeType(typeChecker, parseds, converts, prop.valueDeclaration.type, propType)
         parsed.members.push({ name: prop.name, type: cp })
     }
 }
@@ -492,10 +562,10 @@ const typeErrorClass = ts.createClassDeclaration(
 )
 
 
-function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, parsedInfos: ParsedInfo[]) {
+function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, parsedInfos: ParsedInfo[], converts: ConvertInfo[]) {
     const type = typeChecker.getTypeAtLocation(gen.typeNode)
     info('generate', Bright + FgMagenta + gen.name + Reset + '<' + Bright + FgYellow + typeChecker.typeToString(type) + Reset + '>')
-    const parsed = parseNodeType(typeChecker, parsedInfos, gen.typeNode, type)
+    const parsed = parseNodeType(typeChecker, parsedInfos, converts, gen.typeNode, type)
 
     const vParamName = ts.createIdentifier('v')
     const vParam = ts.createParameter(undefined, undefined, undefined, vParamName, undefined, ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword))
@@ -556,6 +626,20 @@ function getCheckComplexFunctionName(parsed: ParsedInfo) {
 }
 
 function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number = 0) {
+    if (parsed.kind === ParsedKind.Convertion) {
+        if (!parsed.convert) throw new Error('convert is undefined.')
+        return ts.createStatement(
+            ts.createBinary(
+                value,
+                ts.SyntaxKind.EqualsToken,
+                ts.createCall(
+                    ts.createIdentifier(getConvertFunctionName(parsed.convert)),
+                    undefined,
+                    [value]
+                )
+            )
+        )
+    } else {
         const checks = createTypeChecks(parsed, value, name, arrayNest)
         if (checks.length > 0) {
             const errorMessageExp = optimizeStringConcat(
@@ -581,6 +665,7 @@ function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name
 
             return st.if
         }
+    }
 
     return undefined
 }
@@ -670,6 +755,9 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
         for (const p of parsed.types) {
             createTypeChecks(p, value, name, arrayNest, checks)
         }
+    } else if (parsed.kind === ParsedKind.Any) {
+    } else {
+        throw new Error('not supported kind:' + ParsedKind[parsed.kind])
     }
 
     return checks
@@ -694,4 +782,34 @@ function optimizeStringConcat(exp: ts.Expression) {
         }
     }
     return exp
+}
+
+function generateConvertFunction(convert: ConvertInfo) {
+    const funcName = getConvertFunctionName(convert)
+    info(Bright + FgWhite + 'generate', FgCyan + funcName, FgWhite + 'for', FgCyan + convert.name + Reset)
+
+    const body =
+        ts.isBlock(convert.func.body)
+            ? convert.func.body
+            : ts.createBlock([
+                ts.createReturn(convert.func.body)
+            ])
+
+    const vParamName = ts.createIdentifier('v')
+    const vParam = ts.createParameter(undefined, undefined, undefined, vParamName, undefined, ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword))
+
+    return ts.createFunctionDeclaration(
+        undefined,
+        undefined,
+        undefined,
+        funcName,
+        undefined,
+        [vParam],
+        convert.typeNode,
+        body
+    )
+}
+
+function getConvertFunctionName(convert: ConvertInfo) {
+    return '__convert_' + convert.number
 }

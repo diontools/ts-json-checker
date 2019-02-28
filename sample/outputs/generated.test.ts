@@ -80,6 +80,9 @@ for (const p of inputPatterns) {
     }
 }
 
+const date = new Date(2000, 1, 1)
+test("parse date", () => expect(g.parseDate(date.toISOString())).toEqual(date))
+
 //test("number", () => expect(g.parseN(0)).toBe(0))
 //test("not number", () => expect(() => g.parseN('a')).toThrow())
 

@@ -1,7 +1,9 @@
-import { generate } from 'ts-json-checker'
+import { generate, convert } from 'ts-json-checker'
 import { T as M, X } from './types'
 
 const fileName = './outputs/generated.ts'
+
+convert<Date>(v => new Date(v))
 
 generate<number>("parseN")
 generate<string>("parseS")
@@ -12,6 +14,7 @@ generate<null>("parseU")
 generate<any>("parseY")
 generate<M>("parseM")
 generate<bigint>("parseI")
+generate<Date>("parseDate")
 
 generate<number[]>("parseNA")
 generate<string[]>("parseSA")

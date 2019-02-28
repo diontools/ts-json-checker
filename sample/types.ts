@@ -20,6 +20,7 @@ export interface T {
     xud?: X | null
     xa: X[]
     tl: { n: number }
+    date: Date
 }
 
 export interface X {
