@@ -123,7 +123,6 @@ export function generate(params: GenerationParams): GenerationResult {
     }
 
     const outputTexts: string[] = []
-    outputTexts.push(printNode(typeErrorClass))
 
     const parsedInfos: ParsedInfo[] = []
     if (booleanNode) {
@@ -536,31 +535,7 @@ function isLiteralKind(kind: ParsedKind) {
 }
 
 const exportKeywordToken = ts.createToken(ts.SyntaxKind.ExportKeyword)
-
-// export class TypeError implements Error {}
 const typeErrorClassName = ts.createIdentifier('TypeError')
-const typeErrorClass = ts.createClassDeclaration(
-    undefined,
-    [exportKeywordToken],
-    typeErrorClassName,
-    undefined,
-    [ts.createHeritageClause(ts.SyntaxKind.ImplementsKeyword, [ts.createExpressionWithTypeArguments(undefined, ts.createIdentifier('Error'))])],
-    [
-        // public name = "TypeError"
-        ts.createProperty(undefined, [ts.createModifier(ts.SyntaxKind.PublicKeyword)], 'name', undefined, undefined, ts.createStringLiteral('TypeError')),
-
-        // constructor(public message: string) {}
-        ts.createConstructor(undefined, undefined, [
-            ts.createParameter(undefined, [ts.createModifier(ts.SyntaxKind.PublicKeyword)], undefined, 'message', undefined, ts.createKeywordTypeNode(ts.SyntaxKind.StringKeyword))
-        ], ts.createBlock([])),
-
-        // toString() { return this.name + ': ' + this.message }
-        ts.createMethod(undefined, undefined, undefined, 'toString', undefined, undefined, [], undefined, ts.createBlock([
-            ts.createReturn(ts.createAdd(ts.createAdd(ts.createPropertyAccess(ts.createThis(), 'name'), ts.createStringLiteral(': ')), ts.createPropertyAccess(ts.createThis(), 'message'))),
-        ])),
-    ]
-)
-
 
 function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, parsedInfos: ParsedInfo[], converts: ConvertInfo[]) {
     const type = typeChecker.getTypeAtLocation(gen.typeNode)

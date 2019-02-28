@@ -1,11 +1,5 @@
 import { T as M, X } from "../types";
 
-export class TypeError implements Error {
-    public name = "TypeError";
-    constructor(public message: string) { }
-    toString() { return this.name + ": " + this.message; }
-}
-
 export function parseN(v: any): number {
     if (typeof v === "number") { }
     else
