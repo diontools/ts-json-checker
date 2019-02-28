@@ -39,3 +39,5 @@ generate<true | false>("parseBL2")
 generate<"abc" | 1 | true>("parseL")
 generate<123n>("parseIL")
 generate<123n | 456n>("parseIL2")
+
+generate<{ c: { n: number } }>("parseTLTL")

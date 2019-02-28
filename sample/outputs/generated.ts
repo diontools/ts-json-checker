@@ -234,7 +234,7 @@ export function parseTL(v: any): {
     x: number;
 } {
     if (v !== null && typeof v === "object")
-        __check_3(v, "v");
+        __check_4(v, "v");
     else
         throw new TypeError("v is not Object.");
     return <{
@@ -308,6 +308,22 @@ export function parseIL2(v: any): 123n | 456n {
     else
         throw new TypeError("v is not 123n | 456n.");
     return <123n | 456n>v;
+}
+
+export function parseTLTL(v: any): {
+    c: {
+        n: number;
+    };
+} {
+    if (v !== null && typeof v === "object")
+        __check_5(v, "v");
+    else
+        throw new TypeError("v is not Object.");
+    return <{
+        c: {
+            n: number;
+        };
+    }>v;
 }
 
 function __check_1(v: any, r: string) {
@@ -408,6 +424,10 @@ function __check_1(v: any, r: string) {
                 throw new TypeError(r + ".xa[" + i + "] is not Object.");
     else
         throw new TypeError(r + ".xa is not Array.");
+    if (v.tl !== null && typeof v.tl === "object")
+        __check_3(v.tl, r + ".tl");
+    else
+        throw new TypeError(r + ".tl is not Object.");
 }
 
 function __check_2(v: any, r: string) {
@@ -430,7 +450,26 @@ function __check_2(v: any, r: string) {
 }
 
 function __check_3(v: any, r: string) {
+    if (typeof v.n === "number") { }
+    else
+        throw new TypeError(r + ".n is not Number.");
+}
+
+function __check_4(v: any, r: string) {
     if (typeof v.x === "number") { }
     else
         throw new TypeError(r + ".x is not Number.");
+}
+
+function __check_5(v: any, r: string) {
+    if (v.c !== null && typeof v.c === "object")
+        __check_6(v.c, r + ".c");
+    else
+        throw new TypeError(r + ".c is not Object.");
+}
+
+function __check_6(v: any, r: string) {
+    if (typeof v.n === "number") { }
+    else
+        throw new TypeError(r + ".n is not Number.");
 }

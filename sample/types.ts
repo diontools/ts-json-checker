@@ -19,6 +19,7 @@ export interface T {
     xd?: X
     xud?: X | null
     xa: X[]
+    tl: { n: number }
 }
 
 export interface X {

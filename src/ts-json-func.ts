@@ -416,7 +416,9 @@ function parseComplexType(parsed: ParsedInfo, parseds: ParsedInfo[], typeName: s
         const propTypeName = typeChecker.typeToString(propType)
         info(typeName + '.' + prop.name + ':', Bright + FgGreen + propTypeName + Reset)
 
-        const cp = parseNodeType(typeChecker, parseds, prop.valueDeclaration, propType)
+        if (!ts.isPropertySignature(prop.valueDeclaration)) throw new Error('not property signature')
+        if (!prop.valueDeclaration.type) throw new Error('type is undefined')
+        const cp = parseNodeType(typeChecker, parseds, prop.valueDeclaration.type, propType)
         parsed.members.push({ name: prop.name, type: cp })
     }
 }
