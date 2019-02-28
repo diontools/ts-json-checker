@@ -354,7 +354,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
                 }
             }
         }
-    } else if (type.isClassOrInterface()) {
+    } else if (type.isClassOrInterface() || ts.isTypeLiteralNode(node)) {
         parseComplexType(parsed, parseds, typeName, type, typeChecker, node)
     } else {
         const eType = getElementTypeOfArrayType(typeChecker, type)
@@ -362,8 +362,6 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], node:
             parsed.kind = ParsedKind.Array
             debug(FgWhite + 'array of', typeChecker.typeToString(eType) + Reset)
             parsed.elementType = parseNodeType(typeChecker, parseds, node, eType)
-        } else if (ts.isTypeLiteralNode(node)) {
-            parseComplexType(parsed, parseds, typeName, type, typeChecker, node)
         } else {
             debug(ts.TypeFlags[type.flags])
             throw new Error("unknown type: " + typeName)
