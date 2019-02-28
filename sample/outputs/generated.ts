@@ -294,21 +294,6 @@ export function parseL(v: any): "abc" | 1 | true {
     return <"abc" | 1 | true>v;
 }
 
-export function parseIL(v: any): 123n {
-    if (v === 123n) { }
-    else
-        throw new TypeError("v is not 123n.");
-    return <123n>v;
-}
-
-export function parseIL2(v: any): 123n | 456n {
-    if (v === 123n) { }
-    else if (v === 456n) { }
-    else
-        throw new TypeError("v is not 123n | 456n.");
-    return <123n | 456n>v;
-}
-
 export function parseTLTL(v: any): {
     c: {
         n: number;

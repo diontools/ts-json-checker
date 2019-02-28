@@ -6,7 +6,7 @@
   "scripts": {
     "gen": "ts-node ./src/ts-json-generator.ts ./sample/ts-json-config.ts",
     "watch": "nodemon",
-    "test": "jest",
+    "test": "jest --coverage",
     "build": "tsc",
     "start": "parcel ./docs-src/index.html --out-dir ./docs",
     "build:docs": "parcel build ./docs-src/index.html --out-dir ./docs --public-url ./ --no-source-maps"
