@@ -659,7 +659,13 @@ function getLiteralString(kind: ParsedKind, value: any) {
     }
 }
 
-function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number, checks: { if: ts.IfStatement, kind: ParsedKind, literal?: any }[] = []) {
+interface CheckInfo {
+    if: ts.IfStatement
+    kind: ParsedKind
+    literal?: any
+}
+
+function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number, checks: CheckInfo[] = []) {
     if (parsed.kind === ParsedKind.Object) {
         checks.push({
             if: ts.createIf(
