@@ -17,6 +17,7 @@ generate<undefined>("parseD")
 generate<null>("parseU")
 generate<any>("parseY")
 generate<M>("parseM")
+generate<X>("parseX")
 generate<bigint>("parseI")
 generate<Date>("parseDate")
 

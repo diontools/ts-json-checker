@@ -54,6 +54,14 @@ export function parseM(v: any): M {
     return <M>v;
 }
 
+export function parseX(v: any): X {
+    if (v !== null && typeof v === "object")
+        __check_2(v, "v");
+    else
+        throw new TypeError("v is not Object.");
+    return <X>v;
+}
+
 export function parseI(v: any): bigint {
     if (typeof v === "bigint") { }
     else
