@@ -1,4 +1,4 @@
-[![npm version](https://badge.fury.io/js/ts-json-checker.svg)](https://badge.fury.io/js/ts-json-checker)
+[![Build Status](https://travis-ci.org/diontools/ts-json-checker.svg?branch=master)](https://travis-ci.org/diontools/ts-json-checker)[![codecov](https://codecov.io/gh/diontools/ts-json-checker/branch/master/graph/badge.svg)](https://codecov.io/gh/diontools/ts-json-checker)[![npm version](https://badge.fury.io/js/ts-json-checker.svg)](https://www.npmjs.com/package/ts-json-checker)
 
 # ts-json-checker
 
