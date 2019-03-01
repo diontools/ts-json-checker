@@ -67,7 +67,7 @@ export function generate(params: GenerationParams): GenerationResult {
     )
 
     const program = services.getProgram()
-    if (!program) /* istanbul ignore next */ throw new Error("program is undefined.")
+    if (!program) throw new Error("program is undefined.")
 
     const typeChecker = program.getTypeChecker()
 
@@ -442,7 +442,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], conve
             parsed.kind = ParsedKind.Array
             debug(FgWhite + 'array of', typeChecker.typeToString(eType) + Reset)
             parsed.elementType = parseNodeType(typeChecker, parseds, converts, node, eType)
-        } else {
+        } else /* istanbul ignore next */ {
             debug(ts.TypeFlags[type.flags])
             throw new Error("unknown type: " + typeName)
         }
@@ -532,6 +532,7 @@ function getPrimitiveKindName(kind: ParsedKind) {
         case ParsedKind.Boolean: return 'boolean'
         case ParsedKind.Object: return 'object'
         case ParsedKind.Undefined: return 'undefined'
+        /* istanbul ignore next */
         default: throw new Error('non primitive')
     }
 }
@@ -675,6 +676,7 @@ function getLiteralString(kind: ParsedKind, value: any) {
         case ParsedKind.BigIntLiteral:
             const bi = <ts.PseudoBigInt>value
             return (bi.negative ? '-' : '') + bi.base10Value + 'n'
+        /* istanbul ignore next */
         default:
             throw new Error('not literal')
     }
@@ -769,6 +771,7 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
         if (typeCheckInfo.convert) throw new Error('convert already exists')
         typeCheckInfo.convert = parsed.convert
     } else {
+        /* istanbul ignore next */
         throw new Error('not supported kind:' + ParsedKind[parsed.kind])
     }
 
@@ -782,6 +785,7 @@ function optimizeStringConcat(exp: ts.Expression) {
         }
 
         if (ts.isBinaryExpression(exp.right)) {
+            /* istanbul ignore next */
             exp.right = optimizeStringConcat(exp.right)
         }
 
