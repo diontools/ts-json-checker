@@ -411,27 +411,25 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], conve
         for (const t of type.types) {
             //debug(typeChecker.typeToString(t))
             const cp = parseNodeType(typeChecker, parseds, converts, node, t)
-            if (cp.kind !== ParsedKind.Boolean || !parsed.types.some(t => t.kind === ParsedKind.Boolean)) {
-                if (cp.kind === ParsedKind.Array) {
-                    // array before complex
-                    const idx = parsed.types.findIndex(p => p.kind === ParsedKind.Complex)
-                    if (idx >= 0) parsed.types.splice(idx, 0, cp)
-                    else parsed.types.push(cp)
-                } else if (cp.kind === ParsedKind.BooleanLiteral) {
-                    // true | false -> boolean
-                    const otherBoolIndex = parsed.types.findIndex(t => t.kind === ParsedKind.BooleanLiteral && t.literalValue !== cp.literalValue)
-                    if (otherBoolIndex >= 0) {
-                        const boolType = parseds.find(p => p.kind === ParsedKind.Boolean)
-                        if (!boolType) throw new Error('boolean type not found.')
-                        parsed.types[otherBoolIndex] = boolType
-                    } else {
-                        parsed.types.push(cp)
-                    }
-                } else if (cp.kind === ParsedKind.Convertion && parsed.types.some(t => t.kind === ParsedKind.Convertion)) {
-                    throw new Error('unable to use multiple convertion type in union.')
+            if (cp.kind === ParsedKind.Array) {
+                // array before complex
+                const idx = parsed.types.findIndex(p => p.kind === ParsedKind.Complex)
+                if (idx >= 0) parsed.types.splice(idx, 0, cp)
+                else parsed.types.push(cp)
+            } else if (cp.kind === ParsedKind.BooleanLiteral) {
+                // true | false -> boolean
+                const otherBoolIndex = parsed.types.findIndex(t => t.kind === ParsedKind.BooleanLiteral && t.literalValue !== cp.literalValue)
+                if (otherBoolIndex >= 0) {
+                    const boolType = parseds.find(p => p.kind === ParsedKind.Boolean)
+                    if (!boolType) throw new Error('boolean type not found.')
+                    parsed.types[otherBoolIndex] = boolType
                 } else {
                     parsed.types.push(cp)
                 }
+            } else if (cp.kind === ParsedKind.Convertion && parsed.types.some(t => t.kind === ParsedKind.Convertion)) {
+                throw new Error('unable to use multiple convertion type in union.')
+            } else {
+                parsed.types.push(cp)
             }
         }
     } else if (type.isClassOrInterface() || ts.isTypeLiteralNode(node)) {
