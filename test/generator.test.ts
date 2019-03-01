@@ -4,18 +4,19 @@ import { FgWhite, Reset, Bright, FgYellow, FgCyan, FgGreen, FgMagenta, FgRed } f
 import { debug, info, logOption } from '../src/logger'
 import { generate } from '../src/ts-json-func'
 
-function generateTest(configFile: string, configText?: string) {
-    configText = configText !== undefined ? configText : fs.readFileSync(configFile).toString()
+function generateTest(configText?: string, configFile?: string, tsJsonFile?: string) {
+    const baseDir = process.cwd()
+
+    configFile = configFile || './sample/ts-json-config.ts'
+    configText = configText !== undefined ? configText : fs.existsSync(configFile) ? fs.readFileSync(configFile).toString() : undefined
+    tsJsonFile = tsJsonFile || path.relative(baseDir, path.join(__dirname, '../src/index.ts'))
     logOption.isDebug = false
 
     debug(FgWhite + 'initialize...' + Reset)
 
-    const baseDir = process.cwd()
-
     const configDir = path.dirname(configFile)
     info(Bright + FgWhite + 'config:', FgGreen + configFile + Reset)
 
-    const tsJsonFile = path.relative(baseDir, path.join(__dirname, '../src/index.ts'))
     info(Bright + FgWhite + 'tsJson:', FgGreen + tsJsonFile + Reset)
 
     const result = generate({
@@ -47,8 +48,8 @@ function generateTest(configFile: string, configText?: string) {
     })
 }
 
-test("generate", () => expect(() => {
-    generateTest('./sample/ts-json-config.ts')
+test("generate sample", () => expect(() => {
+    generateTest()
 }).not.toThrow())
 
 test("debug output", () => expect(() => {
@@ -56,6 +57,14 @@ test("debug output", () => expect(() => {
     debug('test')
 }).not.toThrow())
 
-test("generate", () => expect(() => {
-    generateTest('./sample/ts-json-config.ts', 'abc')
+test("generate invalid source", () => expect(() => {
+    generateTest('abc')
+}).toThrow())
+
+test("generate invalid config file", () => expect(() => {
+    generateTest(undefined, './invalid.ts')
+}).toThrow())
+
+test("generate invalid tsJson file", () => expect(() => {
+    generateTest(undefined, undefined, 'invalid-ts-json.ts')
 }).toThrow())

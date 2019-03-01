@@ -67,7 +67,7 @@ export function generate(params: GenerationParams): GenerationResult {
     )
 
     const program = services.getProgram()
-    if (!program) throw new Error("program is undefined.")
+    if (!program) /* istanbul ignore next */ throw new Error("program is undefined.")
 
     const typeChecker = program.getTypeChecker()
 
