@@ -42,3 +42,8 @@ test("generate", () => expect(() => {
         eol: "\r\n"
     })
 }).not.toThrow())
+
+test("debug output", () => expect(() => {
+    logOption.isDebug = true
+    debug('test')
+}).not.toThrow())
