@@ -1,0 +1,11 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "target": "esnext",
+        "baseUrl": ".",
+        "paths": {
+            "ts-json-checker": ["../src/index"]
+        },
+        "noEmit": true
+    }
+}

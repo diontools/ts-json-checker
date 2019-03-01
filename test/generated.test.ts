@@ -1,4 +1,4 @@
-import * as g from "./generated";
+import * as g from "../sample/outputs/generated";
 
 enum BasicType {
     number,
