@@ -126,12 +126,12 @@ export function generate(params: GenerationParams): GenerationResult {
 
     const genInfos = getGenerationInfos(services, tsJsonSource, generateFunc, program);
     if (genInfos.length === 0) {
-        debug(Bright + FgYellow + "generate function not found." + Reset)
+        info(Bright + FgYellow + "generate function not found." + Reset)
     }
 
     const convInfos = getConvertInfos(services, tsJsonSource, convertFunc, program, typeChecker)
     if (convInfos.length === 0) {
-        debug(Bright + FgYellow + "convert function not found." + Reset)
+        info(Bright + FgWhite + "convert function not found." + Reset)
     }
 
     const outputTexts: string[] = []
