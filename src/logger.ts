@@ -11,3 +11,7 @@ export function debug(...messages: any[]) {
 export function info(...messages: any[]) {
     console.info(...messages)
 }
+
+export function err(...messages: any[]) {
+    console.error(...messages)
+}

@@ -4,14 +4,14 @@ import { FgWhite, Reset, Bright, FgYellow, FgCyan, FgGreen, FgMagenta, FgRed } f
 import { debug, info, logOption } from '../src/logger'
 import { generate } from '../src/ts-json-func'
 
-test("generate", () => expect(() => {
+function generateTest(configFile: string, configText?: string) {
+    configText = configText !== undefined ? configText : fs.readFileSync(configFile).toString()
     logOption.isDebug = false
 
     debug(FgWhite + 'initialize...' + Reset)
 
     const baseDir = process.cwd()
 
-    const configFile = './sample/ts-json-config.ts'
     const configDir = path.dirname(configFile)
     info(Bright + FgWhite + 'config:', FgGreen + configFile + Reset)
 
@@ -22,6 +22,10 @@ test("generate", () => expect(() => {
         tsJsonFile,
         configFile,
         resolve: fileName => {
+            if (fileName === configFile) {
+                return configText
+            }
+            
             if (fileName.startsWith('libs/')) {
                 fileName = path.join(baseDir, 'node_modules', 'typescript', 'lib', fileName.substr('libs/'.length))
             }
@@ -41,9 +45,17 @@ test("generate", () => expect(() => {
         },
         eol: "\r\n"
     })
+}
+
+test("generate", () => expect(() => {
+    generateTest('./sample/ts-json-config.ts')
 }).not.toThrow())
 
 test("debug output", () => expect(() => {
     logOption.isDebug = true
     debug('test')
 }).not.toThrow())
+
+test("generate", () => expect(() => {
+    generateTest('./sample/ts-json-config.ts', 'abc')
+}).toThrow())

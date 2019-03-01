@@ -1,6 +1,6 @@
 import * as ts from 'typescript'
-import { FgWhite, Reset, Bright, FgYellow, FgCyan, FgGreen, FgMagenta } from './colors';
-import { debug, info } from './logger'
+import { FgWhite, Reset, Bright, FgYellow, FgCyan, FgGreen, FgMagenta, FgRed } from './colors';
+import { debug, info, err } from './logger'
 
 const TSJsonCheckerName = 'ts-json-checker'
 
@@ -84,8 +84,20 @@ export function generate(params: GenerationParams): GenerationResult {
             return node.forEachChild(visit)
     })
 
-    for (const diag of services.getCompilerOptionsDiagnostics()) {
-        debug(diag)
+    const diagnostics =
+        services
+            .getCompilerOptionsDiagnostics()
+            .concat(
+                ...program.getSourceFiles().map(f =>
+                    services
+                        .getSemanticDiagnostics(f.fileName)
+                        .concat(services.getSyntacticDiagnostics(f.fileName))))
+    
+    if (diagnostics.length > 0) {
+        for (const diag of diagnostics) {
+            err(Bright + FgRed + 'Error', diag.code, ':', FgWhite + ts.flattenDiagnosticMessageText(diag.messageText, servicesHost.getNewLine!()) + Reset)
+        }
+        throw new Error('invalid source code.')
     }
 
     const printer = ts.createPrinter({
