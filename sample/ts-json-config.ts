@@ -4,7 +4,8 @@ import { T as M, X } from './types'
 const fileName = './outputs/generated.ts'
 
 convert<Date>(v => {
-    const dt = Date.parse(v)
+    if (v instanceof Date) return v
+    const dt = typeof v === "string" ? Date.parse(v) : NaN
     if (isNaN(dt)) throw new TypeError('Unable to convert to date. value: ' + v)
     return new Date(dt)
 })

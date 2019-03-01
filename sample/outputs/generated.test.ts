@@ -51,6 +51,7 @@ const createM = (edit?: (m: M) => void): M => {
         xa: [{ n2: 1, xa: [] }],
         tl: { n: 1 },
         date: new Date(2000, 1, 1),
+        dateD: new Date(2001, 1, 1),
     }
     if (edit) edit(m)
     return m
@@ -156,6 +157,8 @@ testM('X | undefined', 'xd', p => [BasicType.X, BasicType.undefined].some(t => t
 testM('X | null | undefined', 'xud', p => [BasicType.X, BasicType.null, BasicType.undefined].some(t => t === p.type), p => false)
 testM('X[]', 'xa', p => false, p => [BasicType.X].some(t => t === p.type))
 testM('{n:number}', 'tl', p => [BasicType.M].some(t => t === p.type), p => false)
+testM('Date', 'date', p => false, p => false)
+testM('Date | undefined', 'dateD', p => [BasicType.undefined].some(t => t === p.type), p => false)
 
 testX('number', 'n2', p => [BasicType.number].some(t => t === p.type), p => false)
 testX('X | undefined', 'xd', p => [BasicType.X, BasicType.undefined].some(t => t === p.type), p => false)

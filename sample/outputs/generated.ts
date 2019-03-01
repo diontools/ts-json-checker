@@ -421,6 +421,9 @@ function __check_1(v: any, r: string) {
     else
         throw new TypeError(r + ".tl is not Object.");
     v.date = __convert_1(v.date);
+    if (typeof v.dateD === "undefined") { }
+    else
+        v.dateD = __convert_1(v.dateD);
 }
 
 function __check_2(v: any, r: string) {
@@ -468,7 +471,9 @@ function __check_6(v: any, r: string) {
 }
 
 function __convert_1(v: any): Date {
-    const dt = Date.parse(v);
+    if (v instanceof Date)
+        return v;
+    const dt = typeof v === "string" ? Date.parse(v) : NaN;
     if (isNaN(dt))
         throw new TypeError('Unable to convert to date. value: ' + v);
     return new Date(dt);

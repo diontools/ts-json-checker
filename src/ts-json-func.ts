@@ -415,6 +415,8 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], conve
                     } else {
                         parsed.types.push(cp)
                     }
+                } else if (cp.kind === ParsedKind.Convertion && parsed.types.some(t => t.kind === ParsedKind.Convertion)) {
+                    throw new Error('unable to use multiple convertion type in union.')
                 } else {
                     parsed.types.push(cp)
                 }
@@ -603,26 +605,16 @@ function getCheckComplexFunctionName(parsed: ParsedInfo) {
 function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number = 0) {
     if (parsed.kind === ParsedKind.Convertion) {
         if (!parsed.convert) throw new Error('convert is undefined.')
-        return ts.createStatement(
-            ts.createBinary(
-                value,
-                ts.SyntaxKind.EqualsToken,
-                ts.createCall(
-                    ts.createIdentifier(getConvertFunctionName(parsed.convert)),
-                    undefined,
-                    [value]
-                )
-            )
-        )
+        return createCallConvertStatement(value, parsed.convert)
     } else {
-        const checks = createTypeChecks(parsed, value, name, arrayNest)
-        if (checks.length > 0) {
+        const info = createTypeChecks(parsed, value, name, arrayNest)
+        if (info.checks.length > 0) {
             const errorMessageExp = optimizeStringConcat(
                 ts.createAdd(
                     name,
                     ts.createStringLiteral(
                         ' is not '
-                        + checks
+                        + info.checks
                             .map(c => isLiteralKind(c.kind) ? getLiteralString(c.kind, c.literal) : ParsedKind[c.kind])
                             .join(' | ')
                         + '.'
@@ -630,12 +622,15 @@ function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name
                 )
             )
 
-            let st = checks[checks.length - 1]
-            st.if.elseStatement = ts.createThrow(ts.createNew(typeErrorClassName, undefined, [errorMessageExp]))
+            let st = info.checks[info.checks.length - 1]
+            st.if.elseStatement =
+                info.convert
+                    ? createCallConvertStatement(value, info.convert)
+                    : ts.createThrow(ts.createNew(typeErrorClassName, undefined, [errorMessageExp]))
 
-            for (let i = checks.length - 2; i >= 0; i--) {
-                checks[i].if.elseStatement = st.if
-                st = checks[i]
+            for (let i = info.checks.length - 2; i >= 0; i--) {
+                info.checks[i].if.elseStatement = st.if
+                st = info.checks[i]
             }
 
             return st.if
@@ -643,6 +638,20 @@ function createTypeCheckStatement(parsed: ParsedInfo, value: ts.Expression, name
     }
 
     return undefined
+}
+
+function createCallConvertStatement(value: ts.Expression, convert: ConvertInfo) {
+    return ts.createStatement(
+        ts.createBinary(
+            value,
+            ts.SyntaxKind.EqualsToken,
+            ts.createCall(
+                ts.createIdentifier(getConvertFunctionName(convert)),
+                undefined,
+                [value]
+            )
+        )
+    )
 }
 
 function getLiteralString(kind: ParsedKind, value: any) {
@@ -665,7 +674,13 @@ interface CheckInfo {
     literal?: any
 }
 
-function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number, checks: CheckInfo[] = []) {
+interface TypeCheckInfo {
+    checks: CheckInfo[]
+    convert?: ConvertInfo
+}
+
+function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Expression, arrayNest: number, typeCheckInfo: TypeCheckInfo = { checks: [] }) {
+    const checks = typeCheckInfo.checks
     if (parsed.kind === ParsedKind.Object) {
         checks.push({
             if: ts.createIf(
@@ -734,14 +749,18 @@ function createTypeChecks(parsed: ParsedInfo, value: ts.Expression, name: ts.Exp
         })
     } else if (parsed.kind === ParsedKind.Union) {
         for (const p of parsed.types) {
-            createTypeChecks(p, value, name, arrayNest, checks)
+            createTypeChecks(p, value, name, arrayNest, typeCheckInfo)
         }
     } else if (parsed.kind === ParsedKind.Any) {
+    } else if (parsed.kind === ParsedKind.Convertion) {
+        if (!parsed.convert) throw new Error('convert is undefined.')
+        if (typeCheckInfo.convert) throw new Error('convert already exists')
+        typeCheckInfo.convert = parsed.convert
     } else {
         throw new Error('not supported kind:' + ParsedKind[parsed.kind])
     }
 
-    return checks
+    return typeCheckInfo
 }
 
 function optimizeStringConcat(exp: ts.Expression) {

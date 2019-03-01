@@ -21,6 +21,7 @@ export interface T {
     xa: X[]
     tl: { n: number }
     date: Date
+    dateD?: Date
 }
 
 export interface X {
