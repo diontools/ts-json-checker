@@ -2,9 +2,16 @@
 
 # ts-json-checker
 
-**ts-json-checker** is type checking function generator from type assertion for TypeScript.
+**ts-json-checker** is type check function generator from type assertion for TypeScript.
 
 It is mainly used for JSON input check.
+
+## Feature
+
+* Generate type check function for `JSON.parse`d object
+* Custom convert for specified type
+
+* No required library at runtime
 
 ## Environment
 
@@ -19,7 +26,7 @@ npm install --save-dev ts-json-checker
 
 ## Configure
 
-ts-json-config.ts
+ts-json-config.ts (default file name)
 
 ```typescript
 import { generate, convert } from 'ts-json-checker'
@@ -46,7 +53,7 @@ generate<number | string | boolean | null | undefined>("parseUnion")
 generate<X | undefined>("parseXOrUndefined")
 ```
 
-types.ts
+types.ts (example file)
 
 ```typescript
 export interface X {
@@ -57,6 +64,8 @@ export interface X {
 ```
 
 ## Usage
+
+Command Lines:
 
 ```
 Usage: ts-json-checker [options]
