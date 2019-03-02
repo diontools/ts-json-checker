@@ -8,6 +8,7 @@ interface GenerateTestOptions {
     configText?: string
     configFile?: string
     tsJsonFile?: string
+    eol?: "\r\n" | "\n"
 }
 
 function generateTest(opt: GenerateTestOptions) {
@@ -16,6 +17,7 @@ function generateTest(opt: GenerateTestOptions) {
     opt.configFile = opt.configFile || './sample/ts-json-config.ts'
     opt.configText = opt.configText !== undefined ? opt.configText : fs.existsSync(opt.configFile) ? fs.readFileSync(opt.configFile).toString() : undefined
     opt.tsJsonFile = opt.tsJsonFile || path.relative(baseDir, path.join(__dirname, '../src/index.ts'))
+    opt.eol = opt.eol || "\r\n"
     logOption.isDebug = false
 
     debug(FgWhite + 'initialize...' + Reset)
@@ -32,11 +34,11 @@ function generateTest(opt: GenerateTestOptions) {
             if (fileName === opt.configFile) {
                 return opt.configText
             }
-            
+
             if (fileName.startsWith('libs/')) {
                 fileName = path.join(baseDir, 'node_modules', 'typescript', 'lib', fileName.substr('libs/'.length))
             }
-    
+
             if (fs.existsSync(fileName)) {
                 return fs.readFileSync(fileName).toString()
             }
@@ -50,8 +52,10 @@ function generateTest(opt: GenerateTestOptions) {
             const p = path.join(relativeDir, importPath).replace('\\', '/')
             return p.startsWith('.') ? p : './' + p
         },
-        eol: "\r\n"
+        eol: opt.eol
     })
+
+    return result
 }
 
 test("generate sample", () => expect(() => {
@@ -92,6 +96,16 @@ test("minimum config", () => expect(() => {
     `})
 }).not.toThrow())
 
+test("convert function for expression", () => expect(() => {
+    generateTest({
+        configText: `
+            import { generate, convert } from 'ts-json-checker'
+            const fileName = "test"
+            convert<Date>(v => v)
+            generate<Date>("test")
+    `})
+}).not.toThrow())
+
 test("multiple convertion type in union", () => expect(() => {
     generateTest({
         configText: `
@@ -102,3 +116,16 @@ test("multiple convertion type in union", () => expect(() => {
             generate<Date | RegExp>("test")
     `})
 }).toThrow('unable to use multiple convertion type in union.'))
+
+test("set eol to linefeed", () =>
+    expect(
+        generateTest({
+            configText: `
+                import { generate, convert } from 'ts-json-checker'
+                const fileName = "test"
+                generate<string>("test")
+            `,
+            eol: "\n",
+        })
+    ).toMatchObject({ code: expect.not.stringContaining('\r') })
+)
