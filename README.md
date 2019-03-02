@@ -25,6 +25,7 @@ ts-json-config.ts
 import { generate, convert } from 'ts-json-checker'
 import { X } from './types'
 
+// output file name
 const fileName = './generated.ts'
 
 // Date type convertion
@@ -57,14 +58,24 @@ export interface X {
 
 ## Usage
 
-```shell
-node ./node_modules/ts-json-checker/dist/ts-json-generator.js
-# or specific config file
-node ./node_modules/ts-json-checker/dist/ts-json-generator.js ./ts-json-config.ts
+```
+Usage: ts-json-checker [options]
 
-# using npx
+Options:
+  -v, --version               output the version number
+  -c, --config <config-file>  specify config file
+  -n, --linefeedNewLine       set new line chars to linefeed(LF)
+  -h, --help                  output usage information
+```
+
+example:
+
+```shell
+# use default config file name 'ts-json-config.ts'
 npx ts-json-checker
-npx ts-json-checker ./ts-json-config.ts
+
+# specify config file name
+npx ts-json-checker --config ./other-ts-json-config.ts
 ```
 
 ## Output

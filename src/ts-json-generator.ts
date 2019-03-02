@@ -1,21 +1,30 @@
 import * as fs from 'fs'
 import * as path from 'path'
+import * as commander from 'commander'
 import { FgWhite, Reset, Bright, FgYellow, FgCyan, FgGreen, FgMagenta, FgRed } from './colors';
 import { debug, info, logOption } from './logger'
 import { generate } from './ts-json-func'
 
 logOption.isDebug = false
 
+commander
+    .version(require('../package.json').version, '-v, --version')
+    .option('-c, --config <config-file>', 'specify config file')
+    .option('-n, --linefeedNewLine', 'set new line chars to linefeed(LF)')
+    .parse(process.argv)
+
 debug(FgWhite + 'initialize...' + Reset)
 
 const baseDir = process.cwd()
 
-const configFile = process.argv.length >= 3 ? process.argv[2] : 'ts-json-config.ts'
+const configFile = <string>commander.config || 'ts-json-config.ts'
 const configDir = path.dirname(configFile)
 info(Bright + FgWhite + 'config:', FgGreen + configFile + Reset)
 
 const tsJsonFile = path.relative(baseDir, path.join(__dirname, '../src/index.ts'))
 info(Bright + FgWhite + 'tsJson:', FgGreen + tsJsonFile + Reset)
+
+const eol = commander.linefeedNewLine ? '\n' : '\r\n'
 
 const result = generate({
     tsJsonFile,
@@ -38,7 +47,7 @@ const result = generate({
         const p = path.join(relativeDir, importPath).replace('\\', '/')
         return p.startsWith('.') ? p : './' + p
     },
-    eol: "\r\n"
+    eol: eol
 })
 
 const outputFile = path.join(configDir, result.fileName)
