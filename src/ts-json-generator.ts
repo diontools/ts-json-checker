@@ -44,7 +44,7 @@ const result = generate({
     fixImportPath: (outputFileName, importPath) => {
         const outputDir = path.dirname(path.join(configDir, outputFileName))
         const relativeDir = path.relative(outputDir, configDir)
-        const p = path.join(relativeDir, importPath).replace('\\', '/')
+        const p = path.join(relativeDir, importPath).replace(/\\/g, '/')
         return p.startsWith('.') ? p : './' + p
     },
     eol: eol
