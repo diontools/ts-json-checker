@@ -22,19 +22,27 @@ npm install --save-dev ts-json-checker
 ts-json-config.ts
 
 ```typescript
-import { generate } from 'ts-json-checker'
+import { generate, convert } from 'ts-json-checker'
 import { X } from './types'
 
 const fileName = './generated.ts'
 
-generate<number>("parseN")
+// Date type convertion
+convert<Date>(v => {
+    if (v instanceof Date) return v
+    const dt = typeof v === "string" ? Date.parse(v) : NaN
+    if (isNaN(dt)) throw new TypeError('Unable to convert to date. value: ' + v)
+    return new Date(dt)
+})
+
+generate<number>("parseNumer")
 generate<X>("parseX")
 
-generate<number[]>("parseNA")
-generate<number[][]>("parseNAA")
+generate<number[]>("parseNumberArray")
+generate<number[][]>("parseArrayOfNumberArray")
 
-generate<number | string | boolean | null | undefined>("parseNSBUD")
-generate<X | undefined>("parseXD")
+generate<number | string | boolean | null | undefined>("parseUnion")
+generate<X | undefined>("parseXOrUndefined")
 ```
 
 types.ts
@@ -43,6 +51,7 @@ types.ts
 export interface X {
     abc: string
     x?: X
+    date?: Date
 }
 ```
 
@@ -65,13 +74,7 @@ generated.ts
 ```typescript
 import { X } from "./types";
 
-export class TypeError implements Error {
-    public name = "TypeError";
-    constructor(public message: string) { }
-    toString() { return this.name + ": " + this.message; }
-}
-
-export function parseN(v: any): number {
+export function parseNumer(v: any): number {
     if (typeof v === "number") { }
     else
         throw new TypeError("v is not Number.");
@@ -86,7 +89,7 @@ export function parseX(v: any): X {
     return <X>v;
 }
 
-export function parseNA(v: any): number[] {
+export function parseNumberArray(v: any): number[] {
     if (Array.isArray(v))
         for (let i = 0; i < v.length; i++)
             if (typeof v[i] === "number") { }
@@ -97,7 +100,7 @@ export function parseNA(v: any): number[] {
     return <number[]>v;
 }
 
-export function parseNAA(v: any): number[][] {
+export function parseArrayOfNumberArray(v: any): number[][] {
     if (Array.isArray(v))
         for (let i = 0; i < v.length; i++)
             if (Array.isArray(v[i]))
@@ -112,7 +115,7 @@ export function parseNAA(v: any): number[][] {
     return <number[][]>v;
 }
 
-export function parseNSBUD(v: any): number | string | boolean | null | undefined {
+export function parseUnion(v: any): number | string | boolean | null | undefined {
     if (typeof v === "undefined") { }
     else if (v === null) { }
     else if (typeof v === "string") { }
@@ -123,7 +126,7 @@ export function parseNSBUD(v: any): number | string | boolean | null | undefined
     return <number | string | boolean | null | undefined>v;
 }
 
-export function parseXD(v: any): X | undefined {
+export function parseXOrUndefined(v: any): X | undefined {
     if (typeof v === "undefined") { }
     else if (v !== null && typeof v === "object")
         __check_1(v, "v");
@@ -141,6 +144,18 @@ function __check_1(v: any, r: string) {
         __check_1(v.x, r + ".x");
     else
         throw new TypeError(r + ".x is not Undefined | Object.");
+    if (typeof v.date === "undefined") { }
+    else
+        v.date = __convert_1(v.date);
+}
+
+function __convert_1(v: any): Date {
+    if (v instanceof Date)
+        return v;
+    const dt = typeof v === "string" ? Date.parse(v) : NaN;
+    if (isNaN(dt))
+        throw new TypeError('Unable to convert to date. value: ' + v);
+    return new Date(dt);
 }
 ```
 
