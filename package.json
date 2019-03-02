@@ -9,7 +9,8 @@
     "test": "jest --coverage",
     "build": "tsc",
     "start": "parcel ./docs-src/index.html --out-dir ./docs",
-    "build:docs": "parcel build ./docs-src/index.html --out-dir ./docs --public-url ./ --no-source-maps"
+    "build:docs": "parcel build ./docs-src/index.html --out-dir ./docs --public-url ./ --no-source-maps",
+    "prepublishOnly": "npm run build"
   },
   "bin": "bin/ts-json-generator",
   "repository": {
