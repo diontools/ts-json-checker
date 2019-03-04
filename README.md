@@ -30,12 +30,17 @@ ts-json-config.ts (default file name)
 
 ```typescript
 import { generate, convert } from 'ts-json-checker'
-import { X } from './types'
 
 // output file name
 const fileName = './generated.ts'
 
-// Date type convertion
+export interface Item {
+    name: string
+    price: number
+    releaseDate: Date
+}
+
+// string to Date type convertion
 convert<Date>(v => {
     if (v instanceof Date) return v
     const dt = typeof v === "string" ? Date.parse(v) : NaN
@@ -43,25 +48,17 @@ convert<Date>(v => {
     return new Date(dt)
 })
 
-generate<number>("parseNumer")
-generate<X>("parseX")
+// generate Item type check function
+generate<Item>("parseItem")
 
-generate<number[]>("parseNumberArray")
-generate<number[][]>("parseArrayOfNumberArray")
+// generate Array of Item type check function
+generate<Item[]>("parseItems")
 
-generate<number | string | boolean | null | undefined>("parseUnion")
-generate<X | undefined>("parseXOrUndefined")
+// union type
+generate<Item | null>("parseUnion")
 ```
 
-types.ts (example file)
-
-```typescript
-export interface X {
-    abc: string
-    x?: X
-    date?: Date
-}
-```
+[more config sample](./sample/ts-json-config.ts)
 
 ## Usage
 
