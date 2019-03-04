@@ -1,5 +1,6 @@
 import { T as M, X, Z } from "../types";
 
+// type declarations at config
 export interface LocalType {
     n: number;
 }
