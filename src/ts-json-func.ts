@@ -17,6 +17,12 @@ interface ConvertInfo {
     number: number
 }
 
+interface ParserInfo {
+    typeChecker: ts.TypeChecker
+    converts: ConvertInfo[]
+    parseds: ParsedInfo[]
+}
+
 export interface GenerationParams {
     tsJsonFile: string
     configFile: string
@@ -136,17 +142,22 @@ export function generate(params: GenerationParams): GenerationResult {
 
     const outputTexts: string[] = []
 
-    const parsedInfos: ParsedInfo[] = []
+    const parserInfo: ParserInfo = {
+        typeChecker,
+        converts: convInfos,
+        parseds: []
+    }
+
     if (booleanNode) {
-        parseNodeType(typeChecker, parsedInfos, convInfos, booleanNode, typeChecker.getTypeAtLocation(booleanNode))
+        parseNodeType(parserInfo, booleanNode, typeChecker.getTypeAtLocation(booleanNode))
     }
 
     for (const gen of genInfos) {
-        const func = generateFunction(typeChecker, gen, parsedInfos, convInfos)
+        const func = generateFunction(parserInfo, gen)
         outputTexts.push(printNode(func))
     }
 
-    const complexTypes = parsedInfos.filter(p => p.kind === ParsedKind.Complex)
+    const complexTypes = parserInfo.parseds.filter(p => p.kind === ParsedKind.Complex)
     for (const p of complexTypes) {
         const func = generateComplexFunction(p)
         outputTexts.push(printNode(func))
@@ -368,13 +379,13 @@ function getElementTypeOfArrayType(typeChecker: ts.TypeChecker, type: ts.Type): 
     return (typeChecker as any).getElementTypeOfArrayType(type)
 }
 
-function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], converts: ConvertInfo[], node: ts.Node, type: ts.Type): ParsedInfo {
-    let parsed = parseds.find(p => p.keyType === type)
+function parseNodeType(parser: ParserInfo, node: ts.Node, type: ts.Type): ParsedInfo {
+    let parsed = parser.parseds.find(p => p.keyType === type)
     if (parsed) {
         return parsed
     }
 
-    const typeName = typeChecker.typeToString(type)
+    const typeName = parser.typeChecker.typeToString(type)
     parsed = {
         name: typeName,
         keyType: type,
@@ -384,10 +395,10 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], conve
         complexNumber: -1,
         literalValue: undefined
     }
-    parseds.push(parsed)
+    parser.parseds.push(parsed)
     debug(FgWhite + 'parse ' + typeName + Reset)
 
-    const convert = converts.find(c => c.resultType === type)
+    const convert = parser.converts.find(c => c.resultType === type)
 
     if (convert) {
         debug(FgWhite + 'convertion type' + Reset)
@@ -397,7 +408,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], conve
         parsed.kind = ParsedKind.Boolean
     } else if (isBooleanLiteral(type)) {
         parsed.kind = ParsedKind.BooleanLiteral
-        parsed.literalValue = typeChecker.typeToTypeNode(type)!.kind === ts.SyntaxKind.TrueKeyword
+        parsed.literalValue = parser.typeChecker.typeToTypeNode(type)!.kind === ts.SyntaxKind.TrueKeyword
     } else if (isNumber(type)) {
         parsed.kind = ParsedKind.Number
     } else if (isNumberLiteral(type)) {
@@ -425,7 +436,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], conve
         parsed.kind = ParsedKind.Union
         for (const t of type.types) {
             //debug(typeChecker.typeToString(t))
-            const cp = parseNodeType(typeChecker, parseds, converts, node, t)
+            const cp = parseNodeType(parser, node, t)
             if (cp.kind === ParsedKind.Array) {
                 // array before complex
                 const idx = parsed.types.findIndex(p => p.kind === ParsedKind.Complex)
@@ -435,7 +446,7 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], conve
                 // true | false -> boolean
                 const otherBoolIndex = parsed.types.findIndex(t => t.kind === ParsedKind.BooleanLiteral && t.literalValue !== cp.literalValue)
                 if (otherBoolIndex >= 0) {
-                    const boolType = parseds.find(p => p.kind === ParsedKind.Boolean)
+                    const boolType = parser.parseds.find(p => p.kind === ParsedKind.Boolean)
                     if (!boolType) throw new Error('boolean type not found.')
                     parsed.types[otherBoolIndex] = boolType
                 } else {
@@ -448,13 +459,13 @@ function parseNodeType(typeChecker: ts.TypeChecker, parseds: ParsedInfo[], conve
             }
         }
     } else if (type.isClassOrInterface() || ts.isTypeLiteralNode(node)) {
-        parseComplexType(parsed, parseds, converts, typeName, type, typeChecker, node)
+        parseComplexType(parsed, parser, typeName, type, node)
     } else {
-        const eType = getElementTypeOfArrayType(typeChecker, type)
+        const eType = getElementTypeOfArrayType(parser.typeChecker, type)
         if (eType) {
             parsed.kind = ParsedKind.Array
-            debug(FgWhite + 'array of', typeChecker.typeToString(eType) + Reset)
-            parsed.elementType = parseNodeType(typeChecker, parseds, converts, node, eType)
+            debug(FgWhite + 'array of', parser.typeChecker.typeToString(eType) + Reset)
+            parsed.elementType = parseNodeType(parser, node, eType)
         } else /* istanbul ignore next */ {
             debug(ts.TypeFlags[type.flags])
             throw new Error("unknown type: " + typeName)
@@ -502,19 +513,19 @@ interface ParsedInfo {
     convert?: ConvertInfo
 }
 
-function parseComplexType(parsed: ParsedInfo, parseds: ParsedInfo[], converts: ConvertInfo[], typeName: string, type: ts.Type, typeChecker: ts.TypeChecker, node: ts.Node) {
+function parseComplexType(parsed: ParsedInfo, parser: ParserInfo, typeName: string, type: ts.Type, node: ts.Node) {
     parsed.kind = ParsedKind.Complex
-    parsed.complexNumber = parseds.filter(p => p.kind === ParsedKind.Complex).length
+    parsed.complexNumber = parser.parseds.filter(p => p.kind === ParsedKind.Complex).length
     info('complex type:', Bright + FgCyan + typeName + Reset)
 
     for (const prop of type.getProperties()) {
-        const propType = typeChecker.getTypeOfSymbolAtLocation(prop, node)
-        const propTypeName = typeChecker.typeToString(propType)
+        const propType = parser.typeChecker.getTypeOfSymbolAtLocation(prop, node)
+        const propTypeName = parser.typeChecker.typeToString(propType)
         info(typeName + '.' + prop.name + ':', Bright + FgGreen + propTypeName + Reset)
 
         if (!ts.isPropertySignature(prop.valueDeclaration)) throw new Error('not property signature')
         if (!prop.valueDeclaration.type) throw new Error('type is undefined')
-        const cp = parseNodeType(typeChecker, parseds, converts, prop.valueDeclaration.type, propType)
+        const cp = parseNodeType(parser, prop.valueDeclaration.type, propType)
         parsed.members.push({ name: prop.name, type: cp })
     }
 }
@@ -565,10 +576,10 @@ function isLiteralKind(kind: ParsedKind) {
 const exportKeywordToken = ts.createToken(ts.SyntaxKind.ExportKeyword)
 const typeErrorClassName = ts.createIdentifier('TypeError')
 
-function generateFunction(typeChecker: ts.TypeChecker, gen: GenerationInfo, parsedInfos: ParsedInfo[], converts: ConvertInfo[]) {
-    const type = typeChecker.getTypeAtLocation(gen.typeNode)
-    info('generate', Bright + FgMagenta + gen.name + Reset + '<' + Bright + FgYellow + typeChecker.typeToString(type) + Reset + '>')
-    const parsed = parseNodeType(typeChecker, parsedInfos, converts, gen.typeNode, type)
+function generateFunction(parser: ParserInfo, gen: GenerationInfo) {
+    const type = parser.typeChecker.getTypeAtLocation(gen.typeNode)
+    info('generate', Bright + FgMagenta + gen.name + Reset + '<' + Bright + FgYellow + parser.typeChecker.typeToString(type) + Reset + '>')
+    const parsed = parseNodeType(parser, gen.typeNode, type)
 
     const vParamName = ts.createIdentifier('v')
     const vParam = ts.createParameter(undefined, undefined, undefined, vParamName, undefined, ts.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword))
