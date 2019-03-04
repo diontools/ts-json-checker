@@ -6,6 +6,18 @@ export interface LocalType {
 
 export type LocalTypeAlias = LocalType | undefined;
 
+export enum Enum {
+    one = 1,
+    two = 2,
+    three = 3
+}
+
+export enum StringEnum {
+    one = "ONE",
+    two = "TWO",
+    three = "THREE"
+}
+
 export function parseN(v: any): number {
     if (typeof v === "number") { }
     else
@@ -347,6 +359,24 @@ export function parseLocalTypeAlias(v: any): LocalTypeAlias {
     else
         throw new TypeError("v is not Undefined | Object.");
     return <LocalTypeAlias>v;
+}
+
+export function parseEnum(v: any): Enum {
+    if (v === 1) { }
+    else if (v === 2) { }
+    else if (v === 3) { }
+    else
+        throw new TypeError("v is not 1 | 2 | 3.");
+    return <Enum>v;
+}
+
+export function parseStringEnum(v: any): StringEnum {
+    if (v === "ONE") { }
+    else if (v === "TWO") { }
+    else if (v === "THREE") { }
+    else
+        throw new TypeError("v is not ONE | TWO | THREE.");
+    return <StringEnum>v;
 }
 
 function __check_1(v: any, r: string) {

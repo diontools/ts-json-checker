@@ -376,7 +376,7 @@ function getImports(node: ts.Node) {
 function getOtherDeclarations(node: ts.Node) {
     const statements: ts.Node[] = []
     node.forEachChild(node => {
-        if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) {
+        if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node) || ts.isEnumDeclaration(node)) {
             statements.push(node)
         }
     })

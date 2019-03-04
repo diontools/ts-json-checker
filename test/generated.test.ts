@@ -387,3 +387,15 @@ testBasicInputs(
     p => g.parseLocalTypeAlias,
     p => p.value(),
 )
+
+test('[Error]   ' + 'Enum <- 0', () => expect(() => g.parseEnum(0)).toThrow())
+test('[Correct] ' + 'Enum <- 1', () => expect(g.parseEnum(1)).toEqual(1))
+test('[Correct] ' + 'Enum <- 2', () => expect(g.parseEnum(2)).toEqual(2))
+test('[Correct] ' + 'Enum <- 3', () => expect(g.parseEnum(3)).toEqual(3))
+test('[Error]   ' + 'Enum <- 4', () => expect(() => g.parseEnum(4)).toThrow())
+
+test('[Error]   ' + 'StringEnum <- "ZERO"', () => expect(() => g.parseStringEnum("ZERO")).toThrow())
+test('[Correct] ' + 'StringEnum <- "ONE"', () => expect(g.parseStringEnum("ONE")).toEqual("ONE"))
+test('[Correct] ' + 'StringEnum <- "TWO"', () => expect(g.parseStringEnum("TWO")).toEqual("TWO"))
+test('[Correct] ' + 'StringEnum <- "THREE"', () => expect(g.parseStringEnum("THREE")).toEqual("THREE"))
+test('[Error]   ' + 'StringEnum <- "FOUR"', () => expect(() => g.parseStringEnum("FOUR")).toThrow())

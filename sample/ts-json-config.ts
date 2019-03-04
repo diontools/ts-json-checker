@@ -69,3 +69,19 @@ generate<LocalType>("parseLocalType")
 export type LocalTypeAlias = LocalType | undefined
 
 generate<LocalTypeAlias>("parseLocalTypeAlias")
+
+
+export enum Enum {
+    one = 1,
+    two = 2,
+    three = 3,
+}
+
+export enum StringEnum {
+    one = "ONE",
+    two = "TWO",
+    three = "THREE",
+}
+
+generate<Enum>("parseEnum")
+generate<StringEnum>("parseStringEnum")
