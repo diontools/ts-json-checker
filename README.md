@@ -89,81 +89,49 @@ npx ts-json-checker --config ./other-ts-json-config.ts
 generated.ts
 
 ```typescript
-import { X } from "./types";
-
-export function parseNumer(v: any): number {
-    if (typeof v === "number") { }
-    else
-        throw new TypeError("v is not Number.");
-    return <number>v;
+export interface Item {
+    name: string;
+    price: number;
+    releaseDate: Date;
 }
 
-export function parseX(v: any): X {
+export function parseItem(v: any): Item {
     if (v !== null && typeof v === "object")
         __check_1(v, "v");
     else
         throw new TypeError("v is not Object.");
-    return <X>v;
+    return <Item>v;
 }
 
-export function parseNumberArray(v: any): number[] {
+export function parseItems(v: any): Item[] {
     if (Array.isArray(v))
         for (let i = 0; i < v.length; i++)
-            if (typeof v[i] === "number") { }
+            if (v[i] !== null && typeof v[i] === "object")
+                __check_1(v[i], "v[" + i + "]");
             else
-                throw new TypeError("v[" + i + "] is not Number.");
+                throw new TypeError("v[" + i + "] is not Object.");
     else
         throw new TypeError("v is not Array.");
-    return <number[]>v;
+    return <Item[]>v;
 }
 
-export function parseArrayOfNumberArray(v: any): number[][] {
-    if (Array.isArray(v))
-        for (let i = 0; i < v.length; i++)
-            if (Array.isArray(v[i]))
-                for (let j = 0; j < v[i].length; j++)
-                    if (typeof v[i][j] === "number") { }
-                    else
-                        throw new TypeError("v[" + i + "][" + j + "] is not Number.");
-            else
-                throw new TypeError("v[" + i + "] is not Array.");
-    else
-        throw new TypeError("v is not Array.");
-    return <number[][]>v;
-}
-
-export function parseUnion(v: any): number | string | boolean | null | undefined {
-    if (typeof v === "undefined") { }
-    else if (v === null) { }
-    else if (typeof v === "string") { }
-    else if (typeof v === "number") { }
-    else if (typeof v === "boolean") { }
-    else
-        throw new TypeError("v is not Undefined | Null | String | Number | Boolean.");
-    return <number | string | boolean | null | undefined>v;
-}
-
-export function parseXOrUndefined(v: any): X | undefined {
-    if (typeof v === "undefined") { }
+export function parseUnion(v: any): Item | null {
+    if (v === null) { }
     else if (v !== null && typeof v === "object")
         __check_1(v, "v");
     else
-        throw new TypeError("v is not Undefined | Object.");
-    return <X | undefined>v;
+        throw new TypeError("v is not Null | Object.");
+    return <Item | null>v;
 }
 
 function __check_1(v: any, r: string) {
-    if (typeof v.abc === "string") { }
+    if (typeof v.name === "string") { }
     else
-        throw new TypeError(r + ".abc is not String.");
-    if (typeof v.x === "undefined") { }
-    else if (v.x !== null && typeof v.x === "object")
-        __check_1(v.x, r + ".x");
+        throw new TypeError(r + ".name is not String.");
+    if (typeof v.price === "number") { }
     else
-        throw new TypeError(r + ".x is not Undefined | Object.");
-    if (typeof v.date === "undefined") { }
-    else
-        v.date = __convert_1(v.date);
+        throw new TypeError(r + ".price is not Number.");
+    v.releaseDate = __convert_1(v.releaseDate);
 }
 
 function __convert_1(v: any): Date {
