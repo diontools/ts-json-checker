@@ -345,3 +345,19 @@ testBasicInputs(
 
 test('[Correct] ' + '{c:{n:number}} <- {c:{n:number}}', () => expect(g.parseTLTL({ c: { n: 1 } })).toEqual({ c: { n: 1 } }))
 test('[Error]   ' + '{c:{n:number}} <- {c:{n:string}}', () => expect(() => g.parseTLTL({ c: { n: 'a' } })).toThrow())
+
+testBasicInputs(
+    'LocalType{n: number}',
+    p => [BasicType.M].some(t => t === p.type),
+    p => false,
+    p => g.parseLocalType,
+    p => p.value(),
+)
+
+testBasicInputs(
+    'LocalTypeAlias({n: number} | undefined)',
+    p => [BasicType.M, BasicType.undefined].some(t => t === p.type),
+    p => false,
+    p => g.parseLocalTypeAlias,
+    p => p.value(),
+)

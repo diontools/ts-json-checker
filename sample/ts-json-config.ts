@@ -50,3 +50,14 @@ generate<"abc" | 1 | true>("parseL")
 // generate<123n | 456n>("parseIL2")
 
 generate<{ c: { n: number } }>("parseTLTL")
+
+
+export interface LocalType {
+    n: number
+}
+
+generate<LocalType>("parseLocalType")
+
+export type LocalTypeAlias = LocalType | undefined
+
+generate<LocalTypeAlias>("parseLocalTypeAlias")

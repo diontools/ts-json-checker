@@ -165,6 +165,11 @@ export function generate(params: GenerationParams): GenerationResult {
     if (!ts.isStringLiteral(fileNameVariable.initializer)) throw new Error('fileName variable initializer is not string literal.')
     const fileName = fileNameVariable.initializer.text
 
+    const declarations = getOtherDeclarations(tsJsonConfigSource)
+    if (declarations.length > 0) {
+        outputTexts.unshift(...declarations.map(d => printNode(d)))
+    }
+
     const imports = getImports(tsJsonConfigSource)
     for (let i = 0; i < imports.length; i++) {
         const imp = imports[i]
@@ -299,6 +304,16 @@ function getImports(node: ts.Node) {
         }
     })
     return imports
+}
+
+function getOtherDeclarations(node: ts.Node) {
+    const statements: ts.Node[] = []
+    node.forEachChild(node => {
+        if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) {
+            statements.push(node)
+        }
+    })
+    return statements
 }
 
 function isBoolean(type: ts.Type) {

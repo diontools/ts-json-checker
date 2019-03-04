@@ -1,4 +1,10 @@
-import { T as M, X } from "../types";
+import { T as M, X, Y } from "../types";
+
+export interface LocalType {
+    n: number;
+}
+
+export type LocalTypeAlias = LocalType | undefined;
 
 export function parseN(v: any): number {
     if (typeof v === "number") { }
@@ -318,6 +324,23 @@ export function parseTLTL(v: any): {
     }>v;
 }
 
+export function parseLocalType(v: any): LocalType {
+    if (v !== null && typeof v === "object")
+        __check_7(v, "v");
+    else
+        throw new TypeError("v is not Object.");
+    return <LocalType>v;
+}
+
+export function parseLocalTypeAlias(v: any): LocalTypeAlias {
+    if (typeof v === "undefined") { }
+    else if (v !== null && typeof v === "object")
+        __check_7(v, "v");
+    else
+        throw new TypeError("v is not Undefined | Object.");
+    return <LocalTypeAlias>v;
+}
+
 function __check_1(v: any, r: string) {
     if (typeof v.n === "number") { }
     else
@@ -465,6 +488,12 @@ function __check_5(v: any, r: string) {
 }
 
 function __check_6(v: any, r: string) {
+    if (typeof v.n === "number") { }
+    else
+        throw new TypeError(r + ".n is not Number.");
+}
+
+function __check_7(v: any, r: string) {
     if (typeof v.n === "number") { }
     else
         throw new TypeError(r + ".n is not Number.");

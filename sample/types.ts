@@ -29,3 +29,7 @@ export interface X {
     xd?: X
     xa: X[]
 }
+
+export interface Y {
+    stringNumber: number
+}
