@@ -278,7 +278,7 @@ export function parseTL(v: any): {
 export function parseSL(v: any): "abc" {
     if (v === "abc") { }
     else
-        throw new TypeError("v is not abc.");
+        throw new TypeError("v is not 'abc'.");
     return <"abc">v;
 }
 
@@ -286,7 +286,7 @@ export function parseSL2(v: any): "abc" | "xyz" {
     if (v === "abc") { }
     else if (v === "xyz") { }
     else
-        throw new TypeError("v is not abc | xyz.");
+        throw new TypeError("v is not 'abc' | 'xyz'.");
     return <"abc" | "xyz">v;
 }
 
@@ -324,7 +324,7 @@ export function parseL(v: any): "abc" | 1 | true {
     else if (v === "abc") { }
     else if (v === 1) { }
     else
-        throw new TypeError("v is not true | abc | 1.");
+        throw new TypeError("v is not true | 'abc' | 1.");
     return <"abc" | 1 | true>v;
 }
 
@@ -375,7 +375,7 @@ export function parseStringEnum(v: any): StringEnum {
     else if (v === "TWO") { }
     else if (v === "THREE") { }
     else
-        throw new TypeError("v is not ONE | TWO | THREE.");
+        throw new TypeError("v is not 'ONE' | 'TWO' | 'THREE'.");
     return <StringEnum>v;
 }
 

@@ -767,8 +767,9 @@ function createCallConvertStatement(value: ts.Expression, convert: ConvertInfo) 
 
 function getLiteralString(kind: ParsedKind, value: any) {
     switch (kind) {
-        case ParsedKind.NumberLiteral:
         case ParsedKind.StringLiteral:
+            return "'" + value.toString() + "'"
+        case ParsedKind.NumberLiteral:
         case ParsedKind.BooleanLiteral:
             return value.toString()
         case ParsedKind.BigIntLiteral:
