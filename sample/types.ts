@@ -30,6 +30,6 @@ export interface X {
     xa: X[]
 }
 
-export interface Y {
+export interface Z {
     stringNumber: number
 }

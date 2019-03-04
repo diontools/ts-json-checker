@@ -1,4 +1,4 @@
-import { T as M, X, Y } from "../types";
+import { T as M, X, Z } from "../types";
 
 export interface LocalType {
     n: number;
@@ -78,6 +78,14 @@ export function parseI(v: any): bigint {
 export function parseDate(v: any): Date {
     v = __convert_1(v);
     return <Date>v;
+}
+
+export function parseZ(v: any): Z {
+    if (v !== null && typeof v === "object")
+        __check_4(v, "v");
+    else
+        throw new TypeError("v is not Object.");
+    return <Z>v;
 }
 
 export function parseNA(v: any): number[] {
@@ -247,7 +255,7 @@ export function parseTL(v: any): {
     x: number;
 } {
     if (v !== null && typeof v === "object")
-        __check_4(v, "v");
+        __check_5(v, "v");
     else
         throw new TypeError("v is not Object.");
     return <{
@@ -314,7 +322,7 @@ export function parseTLTL(v: any): {
     };
 } {
     if (v !== null && typeof v === "object")
-        __check_5(v, "v");
+        __check_6(v, "v");
     else
         throw new TypeError("v is not Object.");
     return <{
@@ -326,7 +334,7 @@ export function parseTLTL(v: any): {
 
 export function parseLocalType(v: any): LocalType {
     if (v !== null && typeof v === "object")
-        __check_7(v, "v");
+        __check_8(v, "v");
     else
         throw new TypeError("v is not Object.");
     return <LocalType>v;
@@ -335,7 +343,7 @@ export function parseLocalType(v: any): LocalType {
 export function parseLocalTypeAlias(v: any): LocalTypeAlias {
     if (typeof v === "undefined") { }
     else if (v !== null && typeof v === "object")
-        __check_7(v, "v");
+        __check_8(v, "v");
     else
         throw new TypeError("v is not Undefined | Object.");
     return <LocalTypeAlias>v;
@@ -475,25 +483,29 @@ function __check_3(v: any, r: string) {
 }
 
 function __check_4(v: any, r: string) {
+    v.stringNumber = __convert_2(v.stringNumber);
+}
+
+function __check_5(v: any, r: string) {
     if (typeof v.x === "number") { }
     else
         throw new TypeError(r + ".x is not Number.");
 }
 
-function __check_5(v: any, r: string) {
+function __check_6(v: any, r: string) {
     if (v.c !== null && typeof v.c === "object")
-        __check_6(v.c, r + ".c");
+        __check_7(v.c, r + ".c");
     else
         throw new TypeError(r + ".c is not Object.");
 }
 
-function __check_6(v: any, r: string) {
+function __check_7(v: any, r: string) {
     if (typeof v.n === "number") { }
     else
         throw new TypeError(r + ".n is not Number.");
 }
 
-function __check_7(v: any, r: string) {
+function __check_8(v: any, r: string) {
     if (typeof v.n === "number") { }
     else
         throw new TypeError(r + ".n is not Number.");
@@ -506,4 +518,13 @@ function __convert_1(v: any): Date {
     if (isNaN(dt))
         throw new TypeError('Unable to convert to date. value: ' + v);
     return new Date(dt);
+}
+
+function __convert_2(v: any): Z['stringNumber'] {
+    if (typeof v === "number")
+        return v;
+    const i = typeof v === "string" ? parseInt(v, 10) : NaN;
+    if (isNaN(i))
+        throw new TypeError('Unable to convert to number. value: ' + v);
+    return i;
 }

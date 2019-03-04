@@ -67,6 +67,15 @@ const createX = (edit?: (x: X) => void): X => {
     return x
 }
 
+type Z = ReturnType<typeof g.parseZ>
+const createZ = (edit?: (x: Z) => void): Z => {
+    const z = {
+        stringNumber: 1
+    }
+    if (edit) edit(z)
+    return z
+}
+
 const inputPatterns = [
     { type: BasicType.number, value: () => 1 },
     { type: BasicType.bigint, value: () => 123n },
@@ -135,6 +144,10 @@ function testX(name: string, key: keyof X, isCorrect: (p: InputPattern) => boole
     testComplex('X', createX, g.parseX, name, key, isCorrect, isArrayCorrect)
 }
 
+function testZ(name: string, key: keyof Z, isCorrect: (p: InputPattern) => boolean, isArrayCorrect: (p: InputPattern) => boolean) {
+    testComplex('Z', createZ, g.parseZ, name, key, isCorrect, isArrayCorrect)
+}
+
 test('parse M', () => expect(() => g.parseM(createM())).not.toThrow())
 
 testM('number', 'n', p => [BasicType.number].some(t => t === p.type), p => false)
@@ -163,6 +176,19 @@ testM('Date | undefined', 'dateD', p => [BasicType.undefined].some(t => t === p.
 testX('number', 'n2', p => [BasicType.number].some(t => t === p.type), p => false)
 testX('X | undefined', 'xd', p => [BasicType.X, BasicType.undefined].some(t => t === p.type), p => false)
 testX('X[]', 'xa', p => false, p => [BasicType.X].some(t => t === p.type))
+
+testBasicInputs(
+    'Z',
+    p => false,
+    p => false,
+    p => g.parseZ,
+    p => p.value(),
+)
+
+testZ('number', 'stringNumber', p => [BasicType.number].some(t => t === p.type), p => false)
+test('Z.stringNumber <- number', () => expect(g.parseZ({ stringNumber: 1 })).toEqual({ stringNumber: 1 }))
+test('Z.stringNumber <- string', () => expect(g.parseZ({ stringNumber: '1' })).toEqual({ stringNumber: 1 }))
+test('Z.stringNumber <- null', () => expect(() => g.parseZ({ stringNumber: null })).toThrow())
 
 const arrayFuncs = [
     { type: BasicType.number, func: g.parseNA },

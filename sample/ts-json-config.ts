@@ -1,5 +1,5 @@
-import { generate, convert } from 'ts-json-checker'
-import { T as M, X } from './types'
+import { generate, convert, convertProp } from 'ts-json-checker'
+import { T as M, X, Z } from './types'
 
 const fileName = './outputs/generated.ts'
 
@@ -8,6 +8,13 @@ convert<Date>(v => {
     const dt = typeof v === "string" ? Date.parse(v) : NaN
     if (isNaN(dt)) throw new TypeError('Unable to convert to date. value: ' + v)
     return new Date(dt)
+})
+
+convertProp<Z['stringNumber']>(v => {
+    if (typeof v === "number") return v
+    const i = typeof v === "string" ? parseInt(v, 10) : NaN
+    if (isNaN(i)) throw new TypeError('Unable to convert to number. value: ' + v)
+    return i
 })
 
 generate<number>("parseN")
@@ -21,6 +28,7 @@ generate<M>("parseM")
 generate<X>("parseX")
 generate<bigint>("parseI")
 generate<Date>("parseDate")
+generate<Z>("parseZ")
 
 generate<number[]>("parseNA")
 generate<string[]>("parseSA")

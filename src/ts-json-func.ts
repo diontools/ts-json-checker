@@ -17,9 +17,14 @@ interface ConvertInfo {
     number: number
 }
 
+interface ConvertPropInfo extends ConvertInfo {
+    targetProp: ts.Symbol
+}
+
 interface ParserInfo {
     typeChecker: ts.TypeChecker
     converts: ConvertInfo[]
+    convertProps: ConvertPropInfo[]
     parseds: ParsedInfo[]
 }
 
@@ -86,7 +91,7 @@ export function generate(params: GenerationParams): GenerationResult {
     const booleanNode = tsJsonConfigSource.forEachChild(function visit(node): ts.Node | undefined {
         if (node.kind === ts.SyntaxKind.BooleanKeyword)
             return node
-        else 
+        else
             return node.forEachChild(visit)
     })
 
@@ -98,7 +103,7 @@ export function generate(params: GenerationParams): GenerationResult {
                     services
                         .getSemanticDiagnostics(f.fileName)
                         .concat(services.getSyntacticDiagnostics(f.fileName))))
-    
+
     if (diagnostics.length > 0) {
         for (const diag of diagnostics) {
             err(Bright + FgRed + 'Error', diag.code, ':', FgWhite + ts.flattenDiagnosticMessageText(diag.messageText, servicesHost.getNewLine!()) + Reset)
@@ -128,6 +133,11 @@ export function generate(params: GenerationParams): GenerationResult {
 
     debug(FgWhite + tsJsonSource.fileName, convertFunc.name!.getStart(), convertFunc.getText() + Reset)
 
+    const convertPropFunc = getConvertPropFunction(tsJsonSource)
+    if (!convertPropFunc) throw new Error('convertProp function is undefined.')
+
+    debug(FgWhite + tsJsonSource.fileName, convertPropFunc.name!.getStart(), convertPropFunc.getText() + Reset)
+
     debug(FgWhite + 'references finding...' + Reset)
 
     const genInfos = getGenerationInfos(services, tsJsonSource, generateFunc, program);
@@ -140,11 +150,19 @@ export function generate(params: GenerationParams): GenerationResult {
         info(Bright + FgWhite + "convert function not found." + Reset)
     }
 
+    const convPropInfos = getConvertPropInfos(services, tsJsonSource, convertPropFunc, program, typeChecker)
+    if (convPropInfos.length === 0) {
+        info(Bright + FgWhite + "convertProp function not found." + Reset)
+    }
+    // offset number
+    for (const p of convPropInfos) p.number += convInfos.length
+
     const outputTexts: string[] = []
 
     const parserInfo: ParserInfo = {
         typeChecker,
         converts: convInfos,
+        convertProps: convPropInfos,
         parseds: []
     }
 
@@ -163,7 +181,7 @@ export function generate(params: GenerationParams): GenerationResult {
         outputTexts.push(printNode(func))
     }
 
-    for (const conv of convInfos) {
+    for (const conv of convInfos.concat(convPropInfos)) {
         const func = generateConvertFunction(conv)
         outputTexts.push(printNode(func))
     }
@@ -242,6 +260,36 @@ function getConvertInfos(services: ts.LanguageService, tsJsonSource: ts.SourceFi
     })
 }
 
+function getConvertPropInfos(services: ts.LanguageService, tsJsonSource: ts.SourceFile, convertPropFunc: ts.FunctionDeclaration, program: ts.Program, typeChecker: ts.TypeChecker): ConvertPropInfo[] {
+    const convertPropFuncRefs = services.getReferencesAtPosition(tsJsonSource.fileName, convertPropFunc.name!.getStart())
+    if (!convertPropFuncRefs) throw new Error('convertPropFuncRefs is undefined.')
+
+    const callers = getReferencedCallers(convertPropFuncRefs, program)
+    return callers.map((targetFunc, index) => {
+        const typeNode = targetFunc.typeArguments![0]
+        if (!ts.isIndexedAccessTypeNode(typeNode)) throw new Error('typeArguments[0] is not indexed access type.')
+        if (!ts.isLiteralTypeNode(typeNode.indexType) || !ts.isStringLiteral(typeNode.indexType.literal)) throw new Error('typeArguments[0].indexType is not string literal type.')
+
+        const propSymbol = typeChecker.getSymbolAtLocation(typeNode.indexType.literal)
+        if (!propSymbol) throw new Error('prop symbol is undefined.')
+
+        const arg0 = targetFunc.arguments[0]
+        if (!ts.isArrowFunction(arg0)) throw new Error("arg0 is not arrow function.")
+
+        const type = typeChecker.getTypeAtLocation(typeNode)
+        const typeName = typeChecker.typeToString(type)
+
+        return {
+            typeNode: typeNode,
+            func: arg0,
+            resultType: type,
+            name: typeName,
+            number: index + 1,
+            targetProp: propSymbol,
+        }
+    })
+}
+
 function getReferencedCallers(refs: ts.ReferenceEntry[], program: ts.Program) {
     const callers: ts.CallExpression[] = []
 
@@ -284,6 +332,14 @@ function getGenerateFunction(node: ts.Node) {
 function getConvertFunction(node: ts.Node) {
     return node.forEachChild(node => {
         if (ts.isFunctionDeclaration(node) && node.name && node.name.text === "convert") {
+            return node
+        }
+    })
+}
+
+function getConvertPropFunction(node: ts.Node) {
+    return node.forEachChild(node => {
+        if (ts.isFunctionDeclaration(node) && node.name && node.name.text === "convertProp") {
             return node
         }
     })
@@ -525,7 +581,25 @@ function parseComplexType(parsed: ParsedInfo, parser: ParserInfo, typeName: stri
 
         if (!ts.isPropertySignature(prop.valueDeclaration)) throw new Error('not property signature')
         if (!prop.valueDeclaration.type) throw new Error('type is undefined')
-        const cp = parseNodeType(parser, prop.valueDeclaration.type, propType)
+
+        const convertProp = parser.convertProps.find(c => c.targetProp === prop)
+        let cp: ParsedInfo
+        if (convertProp) {
+            debug(FgWhite + 'convertion prop type' + Reset)
+            cp = {
+                name: typeName,
+                keyType: type,
+                kind: ParsedKind.Convertion,
+                types: [],
+                members: [],
+                complexNumber: -1,
+                literalValue: undefined,
+                convert: convertProp,
+            }
+        } else {
+            cp = parseNodeType(parser, prop.valueDeclaration.type, propType)
+        }
+
         parsed.members.push({ name: prop.name, type: cp })
     }
 }
